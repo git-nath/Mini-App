@@ -161,6 +161,6 @@ export default function App() {
       </div>
       <div className="story-progress">{visibleListings.map((item, index) => <button key={item.id} className={index === activeIndex ? "current" : ""} onClick={() => setActiveIndex(index)} aria-label={`Show home ${index + 1}`} />)}</div>
     </section> : <div className="empty-state"><h1>No homes found</h1><p>Try another area or broker name.</p></div>}
-    <nav className="bottom-nav"><button className="nav-item active"><Icon name="home" /><span className="amharic">ተከራይ</span><b>9</b></button><button className="add-home" onClick={() => setMode("broker")}><Icon name="plus" /><span className="amharic">አከራይ</span></button><button className="nav-item" onClick={() => notify(telegramUser ? `${telegramUser.first_name}'s profile is coming soon.` : "Profile is coming soon.")}><Icon name="user" /><span className="amharic">ተከራይ</span></button></nav>
+    <nav className="bottom-nav"><button className="nav-item active"><Icon name="home" /><span className="amharic">ተከራይ</span><b>9</b></button><button className="add-home" onClick={() => setMode("broker")}><Icon name="plus" /><span className="amharic">አከራይ</span></button><button className="nav-item" onClick={() => notify(telegramUser ? `${telegramUser.first_name}'s profile is coming soon.` : "Profile is coming soon.")}><Icon name="user" /><span className="amharic">መገለጫ</span></button></nav>
   </main>;
 }
