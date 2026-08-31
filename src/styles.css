@@ -19,8 +19,9 @@ button { border: 0; color: inherit; cursor: pointer; -webkit-tap-highlight-color
 .home-screen { height: 100vh; height: 100dvh; background: #070707; position: relative; overflow: hidden; }
 .property-feed { height: 100%; overflow-y: auto; scroll-snap-type: y mandatory; scrollbar-width: none; overscroll-behavior-y: contain; }
 .property-feed::-webkit-scrollbar { display: none; }
-.property-story { height: 100vh; height: 100dvh; position: relative; isolation: isolate; scroll-snap-align: start; background-position: center; background-size: cover; display: flex; flex-direction: column; }
-.image-carousel { position: absolute; inset: 0; z-index: -1; display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain; }
+.property-story { height: 100vh; height: 100dvh; position: relative; isolation: isolate; overflow: hidden; scroll-snap-align: start; background-position: center; background-size: cover; display: flex; flex-direction: column; }
+.story-header { z-index: 2; }
+.image-carousel { position: absolute; inset: 0; z-index: 0; display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain; touch-action: pan-x; }
 .image-carousel::-webkit-scrollbar { display: none; }
 .post-image { flex: 0 0 100%; height: 100%; scroll-snap-align: start; background-position: center; background-size: cover; }
 

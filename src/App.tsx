@@ -66,6 +66,11 @@ function formatCurrency(value: number) {
 }
 
 function mapListing(row: Record<string, unknown>): Listing {
+  const rawImages = row.image_urls;
+  const images = Array.isArray(rawImages)
+    ? rawImages.filter((image): image is string => typeof image === "string" && image.length > 0).slice(0, 10)
+    : [];
+
   return {
     id: Number(row.id),
     title: String(row.title),
@@ -77,7 +82,7 @@ function mapListing(row: Record<string, unknown>): Listing {
     broker: String(row.broker),
     verified: Boolean(row.verified),
     description: String(row.description),
-    images: Array.isArray(row.image_urls) && row.image_urls.length ? row.image_urls.map(String) : [String(row.image_url)],
+    images: images.length ? images : [String(row.image_url)],
   };
 }
 
