@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { isSupabaseConfigured, supabase } from "./lib/supabase";
+import { isGooglePlacesConfigured, searchGooglePlaces, type PlaceSuggestion } from "./lib/google-places";
 
 type Listing = {
   id: number;
@@ -57,19 +58,6 @@ const initialListings: Listing[] = [
   },
 ];
 
-const locationSuggestions = [
-  "Akaki Kality",
-  "Bole",
-  "CMC",
-  "Piazza",
-  "Kazanchis",
-  "Megenagna",
-  "Sar Bet",
-  "Old Airport",
-  "Gerji",
-  "Summit",
-];
-
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -122,6 +110,7 @@ export default function App() {
   const [slideIndexes, setSlideIndexes] = useState<Record<number, number>>({});
   const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [placeSuggestions, setPlaceSuggestions] = useState<PlaceSuggestion[]>([]);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [saving, setSaving] = useState(false);
   const [loadError, setLoadError] = useState("");
@@ -134,6 +123,27 @@ export default function App() {
     telegram.ready();
     telegram.expand();
   }, [telegram]);
+
+  useEffect(() => {
+    if (!searchOpen || !isGooglePlacesConfigured || search.trim().length < 2) {
+      setPlaceSuggestions([]);
+      return;
+    }
+
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      void searchGooglePlaces(search).then((suggestions) => {
+        if (!cancelled) setPlaceSuggestions(suggestions);
+      }).catch(() => {
+        if (!cancelled) setPlaceSuggestions([]);
+      });
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [search, searchOpen]);
 
   useEffect(() => {
     if (!supabase) return;
@@ -247,7 +257,7 @@ export default function App() {
       <div className="story-tabs"><button className="muted-tab amharic">ሱቅ</button><button className="selected-tab amharic">ቤት</button></div>
       <button className="icon-button" onClick={() => setSearchOpen((open) => !open)} aria-label="Search homes"><Icon name="search" /></button>
     </header>
-    {searchOpen && <div className="search-box"><Icon name="search" /><input autoFocus list="home-location-suggestions" placeholder="Search area or broker" value={search} onChange={(e) => setSearch(e.target.value)} /><datalist id="home-location-suggestions">{locationSuggestions.map((location) => <option key={location} value={location} />)}</datalist></div>}
+    {searchOpen && <div className="search-box"><div className="search-input-row"><Icon name="search" /><input autoFocus placeholder="Search area or broker" value={search} onChange={(e) => setSearch(e.target.value)} /></div>{placeSuggestions.length > 0 && <div className="place-suggestions">{placeSuggestions.map((place) => <button key={place.id} onClick={() => { setSearch(place.name); setPlaceSuggestions([]); }}><span>{place.name}</span></button>)}<small>Powered by Google</small></div>}</div>}
     {listing ? <div className="property-feed" ref={feedRef} onScroll={(event) => setActiveIndex(Math.round(event.currentTarget.scrollTop / event.currentTarget.clientHeight))}>
       {visibleListings.map((item, index) => <section className="property-story" key={item.id}>
         <div

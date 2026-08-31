@@ -36,9 +36,14 @@ button { border: 0; color: inherit; cursor: pointer; -webkit-tap-highlight-color
 .icon-button { justify-self: end; display: grid; place-items: center; background: transparent; padding: 8px; }
 svg { width: 28px; height: 28px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
-.search-box { position: fixed; top: 78px; left: 16px; right: 16px; z-index: 5; display: flex; gap: 8px; align-items: center; padding: 9px 12px; border-radius: 14px; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(12px); }
+.search-box { position: fixed; top: 78px; left: 16px; right: 16px; z-index: 5; display: flex; flex-direction: column; gap: 8px; align-items: stretch; padding: 9px 12px; border-radius: 14px; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(12px); }
+.search-input-row { display: flex; gap: 8px; align-items: center; }
 .search-box svg { width: 20px; height: 20px; }
 .search-box input { width: 100%; min-height: 36px; border: 0; outline: 0; color: #fff; background: transparent; font: 0.9rem ui-sans-serif, system-ui, sans-serif; }
+.place-suggestions { display: grid; gap: 2px; border-top: 1px solid rgba(255,255,255,.14); padding-top: 6px; }
+.place-suggestions button { min-height: 38px; padding: 7px 4px; border-radius: 8px; text-align: left; background: transparent; color: #fff; font: .8rem ui-sans-serif, system-ui, sans-serif; }
+.place-suggestions button:hover { background: rgba(255,255,255,.1); }
+.place-suggestions small { color: rgba(255,255,255,.55); font: .64rem ui-sans-serif, system-ui, sans-serif; text-align: right; }
 .post-details { position: absolute; z-index: 2; left: 18px; bottom: calc(102px + env(safe-area-inset-bottom)); color: #fff; font-size: 0.76rem; font-weight: 700; line-height: 1.55; text-shadow: 0 2px 5px rgba(0, 0, 0, 0.9); }
 .post-details p { margin: 0; }
 .post-details strong { margin-right: 3px; }
