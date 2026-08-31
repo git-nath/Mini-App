@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { isSupabaseConfigured, supabase } from "./lib/supabase";
 
 type Listing = {
   id: number;
@@ -64,6 +65,22 @@ function formatCurrency(value: number) {
   }).format(value);
 }
 
+function mapListing(row: Record<string, unknown>): Listing {
+  return {
+    id: Number(row.id),
+    title: String(row.title),
+    area: String(row.area),
+    price: Number(row.price),
+    beds: Number(row.beds),
+    baths: Number(row.baths),
+    type: String(row.type),
+    broker: String(row.broker),
+    verified: Boolean(row.verified),
+    description: String(row.description),
+    image: String(row.image_url),
+  };
+}
+
 function Icon({ name }: { name: "home" | "search" | "heart" | "chat" | "phone" | "share" | "user" | "plus" }) {
   const paths = {
     home: <><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1Z" /><path d="M9 21v-6h6v6" /></>,
@@ -87,6 +104,9 @@ export default function App() {
   const [saved, setSaved] = useState<number[]>([]);
   const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [loadError, setLoadError] = useState("");
   const [form, setForm] = useState({ title: "", area: "", price: "", beds: "2", baths: "1", broker: "", description: "" });
 
   useEffect(() => {
@@ -94,6 +114,22 @@ export default function App() {
     telegram.ready();
     telegram.expand();
   }, [telegram]);
+
+  useEffect(() => {
+    if (!supabase) return;
+    const client = supabase;
+
+    const loadListings = async () => {
+      const { data, error } = await client.from("listings").select("*").order("created_at", { ascending: false });
+      if (error) {
+        setLoadError("Supabase is connected, but the listings table is not ready yet.");
+        return;
+      }
+      if (data?.length) setListings(data.map((row) => mapListing(row as Record<string, unknown>)));
+    };
+
+    void loadListings();
+  }, []);
 
   const visibleListings = listings.filter((listing) => {
     const query = search.toLowerCase();
@@ -113,8 +149,37 @@ export default function App() {
     notify(`Viewing request sent for ${listing.title}.`, { action: "request_viewing", listingId: listing.id });
   };
 
-  const handlePost = (event: React.FormEvent) => {
+  const handlePost = async (event: React.FormEvent) => {
     event.preventDefault();
+    setSaving(true);
+
+    if (supabase && imageFile) {
+      const filePath = `${Date.now()}-${imageFile.name.replace(/[^a-zA-Z0-9.-]/g, "-")}`;
+      const { error: uploadError } = await supabase.storage.from("listing-images").upload(filePath, imageFile, { contentType: imageFile.type, upsert: false });
+      if (uploadError) {
+        setSaving(false);
+        setLoadError(uploadError.message);
+        return;
+      }
+
+      const { data: publicImage } = supabase.storage.from("listing-images").getPublicUrl(filePath);
+      const { data, error } = await supabase.from("listings").insert({
+        title: form.title, area: form.area, city: "Addis Ababa", price: Number(form.price), beds: Number(form.beds), baths: Number(form.baths),
+        type: "Apartment", broker: form.broker, description: form.description, image_url: publicImage.publicUrl, verified: false,
+      }).select().single();
+      setSaving(false);
+      if (error) {
+        setLoadError(error.message);
+        return;
+      }
+      if (data) setListings((current) => [mapListing(data as Record<string, unknown>), ...current]);
+      setActiveIndex(0);
+      setMode("home");
+      setImageFile(null);
+      setForm({ title: "", area: "", price: "", beds: "2", baths: "1", broker: "", description: "" });
+      return;
+    }
+
     const newListing: Listing = {
       id: Date.now(), title: form.title, area: form.area, price: Number(form.price), beds: Number(form.beds), baths: Number(form.baths),
       type: "Apartment", broker: form.broker, verified: false, description: form.description,
@@ -123,6 +188,8 @@ export default function App() {
     setListings((current) => [newListing, ...current]);
     setActiveIndex(0);
     setMode("home");
+    setImageFile(null);
+    setSaving(false);
     setForm({ title: "", area: "", price: "", beds: "2", baths: "1", broker: "", description: "" });
   };
 
@@ -135,8 +202,10 @@ export default function App() {
         <input required placeholder="Area / neighborhood" value={form.area} onChange={(e) => setForm({ ...form, area: e.target.value })} />
         <div className="form-row"><input required type="number" min="0" placeholder="Monthly price" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} /><select value={form.beds} onChange={(e) => setForm({ ...form, beds: e.target.value })}><option value="1">1 bedroom</option><option value="2">2 bedrooms</option><option value="3">3 bedrooms</option><option value="4">4 bedrooms</option></select></div>
         <input required placeholder="Broker / agency name" value={form.broker} onChange={(e) => setForm({ ...form, broker: e.target.value })} />
+        <label className="image-picker"><span>{imageFile ? imageFile.name : "Choose home photo"}</span><input required={isSupabaseConfigured} type="file" accept="image/png,image/jpeg,image/webp" onChange={(e) => setImageFile(e.target.files?.[0] ?? null)} /></label>
         <textarea required rows={5} placeholder="Short description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
-        <button className="publish-button" type="submit">Publish listing</button>
+        <button className="publish-button" type="submit" disabled={saving}>{saving ? "Publishing..." : "Publish listing"}</button>
+        {loadError && <p className="form-error">{loadError}</p>}
       </form>
     </main>;
   }

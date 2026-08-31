@@ -74,7 +74,11 @@ svg { width: 28px; height: 28px; fill: none; stroke: currentColor; stroke-width:
 .listing-form input, .listing-form select, .listing-form textarea { width: 100%; min-height: 50px; border: 1px solid rgba(255,255,255,.12); border-radius: 13px; padding: 13px; outline: 0; background: rgba(255,255,255,.08); color: #fff; font: .9rem ui-sans-serif, system-ui, sans-serif; }
 .listing-form textarea { resize: vertical; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.image-picker { display: grid; gap: 8px; padding: 15px; border: 1px dashed rgba(255,255,255,.35); border-radius: 13px; background: rgba(255,255,255,.06); color: rgba(255,255,255,.82); font: .84rem ui-sans-serif, system-ui, sans-serif; }
+.image-picker input { min-height: auto; padding: 0; border: 0; background: transparent; }
+.form-error { color: #ff9fb5; font: .78rem/1.4 ui-sans-serif, system-ui, sans-serif; }
 .publish-button { background: var(--pink); color: #fff; }
+.publish-button:disabled { cursor: wait; opacity: .65; }
 .empty-state { display: grid; place-content: center; min-height: 80vh; padding: 24px; text-align: center; }
 .empty-state p { color: var(--muted); font: .9rem ui-sans-serif, system-ui, sans-serif; }
 
