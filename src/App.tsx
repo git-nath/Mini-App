@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { isSupabaseConfigured, supabase } from "./lib/supabase";
-import { searchPlaces, type PlaceSuggestion } from "./lib/photon-places";
+import { reverseGeocode, searchPlaces, type PlaceSuggestion } from "./lib/photon-places";
 
 type Listing = {
   id: number;
@@ -114,6 +114,7 @@ export default function App() {
   const [placeSuggestions, setPlaceSuggestions] = useState<PlaceSuggestion[]>([]);
   const [areaSuggestions, setAreaSuggestions] = useState<PlaceSuggestion[]>([]);
   const [areaSearchError, setAreaSearchError] = useState("");
+  const [locating, setLocating] = useState(false);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [saving, setSaving] = useState(false);
   const [loadError, setLoadError] = useState("");
@@ -264,13 +265,38 @@ export default function App() {
     setForm({ title: "", area: "", price: "", beds: "2", baths: "1", broker: "", description: "" });
   };
 
+  const useCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setAreaSearchError("Location is not available in this browser.");
+      return;
+    }
+
+    setLocating(true);
+    setAreaSearchError("");
+    navigator.geolocation.getCurrentPosition(async ({ coords }) => {
+      try {
+        const place = await reverseGeocode(coords.latitude, coords.longitude);
+        if (!place) throw new Error("No address was found for your current location.");
+        setForm((current) => ({ ...current, area: place.name }));
+        setAreaSuggestions([]);
+      } catch (error) {
+        setAreaSearchError(error instanceof Error ? error.message : "Current location lookup failed.");
+      } finally {
+        setLocating(false);
+      }
+    }, () => {
+      setLocating(false);
+      setAreaSearchError("Location permission was denied. Allow location access and try again.");
+    }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 });
+  };
+
   if (mode === "broker") {
     return <main className="broker-screen">
       <button className="back-button" onClick={() => setMode("home")}>Back to homes</button>
       <div className="broker-heading"><span className="eyebrow amharic">አከራይ</span><h1>Post a home</h1><p>Reach renters looking for their next place in Addis Ababa.</p></div>
       <form className="listing-form" onSubmit={handlePost}>
         <input required placeholder="Home title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
-        <div className="location-field"><input required placeholder="Area / neighborhood" value={form.area} onChange={(e) => { setForm({ ...form, area: e.target.value }); setAreaSuggestions([]); }} />{areaSuggestions.length > 0 && <div className="place-suggestions form-suggestions">{areaSuggestions.map((place) => <button type="button" key={place.id} onClick={() => { setForm({ ...form, area: place.name }); setAreaSuggestions([]); }}><span>{place.name}</span></button>)}<small>Powered by OpenStreetMap</small></div>}{areaSearchError && <p className="location-error">{areaSearchError}</p>}</div>
+        <div className="location-field"><input required placeholder="Area / neighborhood" value={form.area} onChange={(e) => { setForm({ ...form, area: e.target.value }); setAreaSuggestions([]); }} /><button type="button" className="location-button" onClick={useCurrentLocation} disabled={locating}>{locating ? "Finding your location..." : "Use my current location"}</button>{areaSuggestions.length > 0 && <div className="place-suggestions form-suggestions">{areaSuggestions.map((place) => <button type="button" key={place.id} onClick={() => { setForm({ ...form, area: place.name }); setAreaSuggestions([]); }}><span>{place.name}</span></button>)}<small>Powered by OpenStreetMap</small></div>}{areaSearchError && <p className="location-error">{areaSearchError}</p>}</div>
         <div className="form-row"><input required type="number" min="0" placeholder="Monthly price" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} /><select value={form.beds} onChange={(e) => setForm({ ...form, beds: e.target.value })}><option value="1">1 bedroom</option><option value="2">2 bedrooms</option><option value="3">3 bedrooms</option><option value="4">4 bedrooms</option></select></div>
         <input required placeholder="Broker / agency name" value={form.broker} onChange={(e) => setForm({ ...form, broker: e.target.value })} />
         <label className="image-picker"><span>{imageFiles.length ? `${imageFiles.length} image${imageFiles.length === 1 ? "" : "s"} selected (max 10)` : "Choose 1 to 10 home photos"}</span><input required={isSupabaseConfigured} type="file" accept="image/png,image/jpeg,image/webp" multiple onChange={(e) => setImageFiles(Array.from(e.target.files ?? []).slice(0, 10))} /></label>
