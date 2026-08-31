@@ -12,7 +12,7 @@ type Listing = {
   broker: string;
   verified: boolean;
   description: string;
-  image: string;
+  images: string[];
 };
 
 const initialListings: Listing[] = [
@@ -27,7 +27,7 @@ const initialListings: Listing[] = [
     broker: "Mekdes Homes",
     verified: true,
     description: "Newly finished apartment with a balcony, secure entrance, and fast internet.",
-    image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=85",
+    images: ["https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=85", "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=1200&q=85"],
   },
   {
     id: 2,
@@ -40,7 +40,7 @@ const initialListings: Listing[] = [
     broker: "Alem Property",
     verified: true,
     description: "A quiet compound with parking space and a private backyard for family living.",
-    image: "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=1200&q=85",
+    images: ["https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=1200&q=85", "https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?auto=format&fit=crop&w=1200&q=85"],
   },
   {
     id: 3,
@@ -53,7 +53,7 @@ const initialListings: Listing[] = [
     broker: "Tsega Brokers",
     verified: false,
     description: "A bright studio for students or solo renters with easy access to transport.",
-    image: "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1200&q=85",
+    images: ["https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1200&q=85"],
   },
 ];
 
@@ -77,7 +77,7 @@ function mapListing(row: Record<string, unknown>): Listing {
     broker: String(row.broker),
     verified: Boolean(row.verified),
     description: String(row.description),
-    image: String(row.image_url),
+    images: Array.isArray(row.image_urls) && row.image_urls.length ? row.image_urls.map(String) : [String(row.image_url)],
   };
 }
 
@@ -102,9 +102,10 @@ export default function App() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [mode, setMode] = useState<"home" | "broker">("home");
   const [saved, setSaved] = useState<number[]>([]);
+  const [slideIndexes, setSlideIndexes] = useState<Record<number, number>>({});
   const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [saving, setSaving] = useState(false);
   const [loadError, setLoadError] = useState("");
   const [form, setForm] = useState({ title: "", area: "", price: "", beds: "2", baths: "1", broker: "", description: "" });
@@ -154,19 +155,30 @@ export default function App() {
     event.preventDefault();
     setSaving(true);
 
-    if (supabase && imageFile) {
-      const filePath = `${Date.now()}-${imageFile.name.replace(/[^a-zA-Z0-9.-]/g, "-")}`;
-      const { error: uploadError } = await supabase.storage.from("listing-images").upload(filePath, imageFile, { contentType: imageFile.type, upsert: false });
-      if (uploadError) {
+    if (supabase && imageFiles.length) {
+      const client = supabase;
+      if (imageFiles.length > 10) {
         setSaving(false);
-        setLoadError(uploadError.message);
+        setLoadError("Please choose no more than 10 images.");
         return;
       }
 
-      const { data: publicImage } = supabase.storage.from("listing-images").getPublicUrl(filePath);
-      const { data, error } = await supabase.from("listings").insert({
+      let uploadedImages: string[];
+      try {
+        uploadedImages = await Promise.all(imageFiles.map(async (file) => {
+          const filePath = `${Date.now()}-${crypto.randomUUID()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, "-")}`;
+          const { error: uploadError } = await client.storage.from("listing-images").upload(filePath, file, { contentType: file.type, upsert: false });
+          if (uploadError) throw uploadError;
+          return client.storage.from("listing-images").getPublicUrl(filePath).data.publicUrl;
+        }));
+      } catch (error) {
+        setSaving(false);
+        setLoadError(error instanceof Error ? error.message : "Image upload failed.");
+        return;
+      }
+      const { data, error } = await client.from("listings").insert({
         title: form.title, area: form.area, city: "Addis Ababa", price: Number(form.price), beds: Number(form.beds), baths: Number(form.baths),
-        type: "Apartment", broker: form.broker, description: form.description, image_url: publicImage.publicUrl, verified: false,
+        type: "Apartment", broker: form.broker, description: form.description, image_url: uploadedImages[0], image_urls: uploadedImages, verified: false,
       }).select().single();
       setSaving(false);
       if (error) {
@@ -176,7 +188,7 @@ export default function App() {
       if (data) setListings((current) => [mapListing(data as Record<string, unknown>), ...current]);
       setActiveIndex(0);
       setMode("home");
-      setImageFile(null);
+      setImageFiles([]);
       setForm({ title: "", area: "", price: "", beds: "2", baths: "1", broker: "", description: "" });
       return;
     }
@@ -184,12 +196,12 @@ export default function App() {
     const newListing: Listing = {
       id: Date.now(), title: form.title, area: form.area, price: Number(form.price), beds: Number(form.beds), baths: Number(form.baths),
       type: "Apartment", broker: form.broker, verified: false, description: form.description,
-      image: "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=85",
+      images: ["https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=85"],
     };
     setListings((current) => [newListing, ...current]);
     setActiveIndex(0);
     setMode("home");
-    setImageFile(null);
+    setImageFiles([]);
     setSaving(false);
     setForm({ title: "", area: "", price: "", beds: "2", baths: "1", broker: "", description: "" });
   };
@@ -203,7 +215,7 @@ export default function App() {
         <input required placeholder="Area / neighborhood" value={form.area} onChange={(e) => setForm({ ...form, area: e.target.value })} />
         <div className="form-row"><input required type="number" min="0" placeholder="Monthly price" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} /><select value={form.beds} onChange={(e) => setForm({ ...form, beds: e.target.value })}><option value="1">1 bedroom</option><option value="2">2 bedrooms</option><option value="3">3 bedrooms</option><option value="4">4 bedrooms</option></select></div>
         <input required placeholder="Broker / agency name" value={form.broker} onChange={(e) => setForm({ ...form, broker: e.target.value })} />
-        <label className="image-picker"><span>{imageFile ? imageFile.name : "Choose home photo"}</span><input required={isSupabaseConfigured} type="file" accept="image/png,image/jpeg,image/webp" onChange={(e) => setImageFile(e.target.files?.[0] ?? null)} /></label>
+        <label className="image-picker"><span>{imageFiles.length ? `${imageFiles.length} image${imageFiles.length === 1 ? "" : "s"} selected (max 10)` : "Choose 1 to 10 home photos"}</span><input required={isSupabaseConfigured} type="file" accept="image/png,image/jpeg,image/webp" multiple onChange={(e) => setImageFiles(Array.from(e.target.files ?? []).slice(0, 10))} /></label>
         <textarea required rows={5} placeholder="Short description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
         <button className="publish-button" type="submit" disabled={saving}>{saving ? "Publishing..." : "Publish listing"}</button>
         {loadError && <p className="form-error">{loadError}</p>}
@@ -214,7 +226,10 @@ export default function App() {
   return <main className="home-screen">
     {searchOpen && <div className="search-box"><Icon name="search" /><input autoFocus placeholder="Search area or broker" value={search} onChange={(e) => setSearch(e.target.value)} /></div>}
     {listing ? <div className="property-feed" ref={feedRef} onScroll={(event) => setActiveIndex(Math.round(event.currentTarget.scrollTop / event.currentTarget.clientHeight))}>
-      {visibleListings.map((item, index) => <section className="property-story" key={item.id} style={{ backgroundImage: `url(${item.image})` }}>
+      {visibleListings.map((item, index) => <section className="property-story" key={item.id}>
+        <div className="image-carousel" onScroll={(event) => setSlideIndexes((current) => ({ ...current, [item.id]: Math.round(event.currentTarget.scrollLeft / event.currentTarget.clientWidth) }))}>
+          {item.images.map((image) => <div className="post-image" key={image} style={{ backgroundImage: `url(${image})` }} />)}
+        </div>
         <header className="story-header">
           <button className="live-button"><span className="live-dot" /> HOMES</button>
           <div className="story-tabs"><button className="muted-tab amharic">ሱቅ</button><button className="selected-tab amharic">ቤት</button></div>
@@ -231,7 +246,7 @@ export default function App() {
           <button className="action" onClick={() => notify(`Call ${item.broker} will be connected to Telegram.`)} aria-label="Call broker"><Icon name="phone" /><small className="amharic">ደውል</small></button>
           <button className="action" onClick={() => notify(`Address: ${item.area}`)} aria-label="Show address"><Icon name="share" /></button>
         </aside>
-        <div className="story-progress"><button className="current" aria-label={`Home ${index + 1} of ${visibleListings.length}`} /></div>
+        <div className="story-progress">{item.images.map((image, imageIndex) => <button key={image} className={imageIndex === (slideIndexes[item.id] ?? 0) ? "current" : ""} aria-label={`Image ${imageIndex + 1} of ${item.images.length}`} />)}</div>
       </section>)}
     </div> : <div className="empty-state"><h1>No homes found</h1><p>Try another area or broker name.</p></div>}
     <nav className="bottom-nav"><button className="nav-item active"><Icon name="home" /><span className="amharic">ተከራይ</span><b>9</b></button><button className="add-home" onClick={() => setMode("broker")}><Icon name="plus" /><span className="amharic">አከራይ</span></button><button className="nav-item" onClick={() => notify(telegramUser ? `${telegramUser.first_name}'s profile is coming soon.` : "Profile is coming soon.")}><Icon name="user" /><span className="amharic">መገለጫ</span></button></nav>

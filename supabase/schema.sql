@@ -10,9 +10,12 @@ create table if not exists public.listings (
   broker text not null,
   description text not null,
   image_url text not null,
+  image_urls jsonb not null default '[]'::jsonb,
   verified boolean not null default false,
   created_at timestamptz not null default now()
 );
+
+alter table public.listings add column if not exists image_urls jsonb not null default '[]'::jsonb;
 
 alter table public.listings enable row level security;
 
