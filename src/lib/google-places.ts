@@ -12,7 +12,7 @@ function loadGoogleMaps(): Promise<void> {
 
   googleMapsPromise = new Promise((resolve, reject) => {
     const script = document.createElement("script");
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(googleMapsKey)}&v=weekly&loading=async`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(googleMapsKey)}&v=weekly&libraries=places&loading=async`;
     script.async = true;
     script.onload = () => resolve();
     script.onerror = () => reject(new Error("Google Places could not be loaded."));
@@ -31,7 +31,8 @@ export async function searchGooglePlaces(input: string): Promise<PlaceSuggestion
   if (!googleMapsKey || input.trim().length < 2) return [];
 
   await loadGoogleMaps();
-  const places = await google.maps.importLibrary("places") as google.maps.PlacesLibrary;
+  const places = google.maps.places;
+  if (!places?.AutocompleteSuggestion) throw new Error("Google Places library is unavailable.");
   sessionToken ??= new places.AutocompleteSessionToken();
 
   const { suggestions } = await places.AutocompleteSuggestion.fetchAutocompleteSuggestions({
