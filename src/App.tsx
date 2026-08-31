@@ -110,6 +110,7 @@ export default function App() {
   const [slideIndexes, setSlideIndexes] = useState<Record<number, number>>({});
   const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [selectedPlace, setSelectedPlace] = useState<PlaceSuggestion | null>(null);
   const [placeSuggestions, setPlaceSuggestions] = useState<PlaceSuggestion[]>([]);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [saving, setSaving] = useState(false);
@@ -162,7 +163,8 @@ export default function App() {
   }, []);
 
   const visibleListings = listings.filter((listing) => {
-    const query = search.toLowerCase();
+    // Free typing is for Google autocomplete; filter only after a place is selected.
+    const query = selectedPlace?.name.toLowerCase() ?? "";
     return !query || `${listing.title} ${listing.area} ${listing.broker}`.toLowerCase().includes(query);
   });
   const listing = visibleListings[activeIndex] ?? visibleListings[0];
@@ -257,7 +259,7 @@ export default function App() {
       <div className="story-tabs"><button className="muted-tab amharic">ሱቅ</button><button className="selected-tab amharic">ቤት</button></div>
       <button className="icon-button" onClick={() => setSearchOpen((open) => !open)} aria-label="Search homes"><Icon name="search" /></button>
     </header>
-    {searchOpen && <div className="search-box"><div className="search-input-row"><Icon name="search" /><input autoFocus placeholder="Search area or broker" value={search} onChange={(e) => setSearch(e.target.value)} /></div>{placeSuggestions.length > 0 && <div className="place-suggestions">{placeSuggestions.map((place) => <button key={place.id} onClick={() => { setSearch(place.name); setPlaceSuggestions([]); }}><span>{place.name}</span></button>)}<small>Powered by Google</small></div>}</div>}
+    {searchOpen && <div className="search-box"><div className="search-input-row"><Icon name="search" /><input autoFocus placeholder="Search a real address" value={search} onChange={(e) => { setSearch(e.target.value); setSelectedPlace(null); }} /></div>{placeSuggestions.length > 0 && <div className="place-suggestions">{placeSuggestions.map((place) => <button key={place.id} onClick={() => { setSearch(place.name); setSelectedPlace(place); setPlaceSuggestions([]); }}><span>{place.name}</span></button>)}<small>Powered by Google</small></div>}</div>}
     {listing ? <div className="property-feed" ref={feedRef} onScroll={(event) => setActiveIndex(Math.round(event.currentTarget.scrollTop / event.currentTarget.clientHeight))}>
       {visibleListings.map((item, index) => <section className="property-story" key={item.id}>
         <div
