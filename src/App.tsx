@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 type Listing = {
   id: number;
@@ -11,6 +11,7 @@ type Listing = {
   broker: string;
   verified: boolean;
   description: string;
+  image: string;
 };
 
 const initialListings: Listing[] = [
@@ -24,7 +25,8 @@ const initialListings: Listing[] = [
     type: "Apartment",
     broker: "Mekdes Homes",
     verified: true,
-    description: "Newly finished unit with balcony, secure entrance, and fast internet.",
+    description: "Newly finished apartment with a balcony, secure entrance, and fast internet.",
+    image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=85",
   },
   {
     id: 2,
@@ -36,7 +38,8 @@ const initialListings: Listing[] = [
     type: "House",
     broker: "Alem Property",
     verified: true,
-    description: "Quiet compound, parking space, and a private backyard for family living.",
+    description: "A quiet compound with parking space and a private backyard for family living.",
+    image: "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=1200&q=85",
   },
   {
     id: 3,
@@ -48,7 +51,8 @@ const initialListings: Listing[] = [
     type: "Studio",
     broker: "Tsega Brokers",
     verified: false,
-    description: "Great for students or solo renters who want easy access to transit.",
+    description: "A bright studio for students or solo renters with easy access to transport.",
+    image: "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1200&q=85",
   },
 ];
 
@@ -60,265 +64,103 @@ function formatCurrency(value: number) {
   }).format(value);
 }
 
+function Icon({ name }: { name: "home" | "search" | "heart" | "chat" | "phone" | "share" | "user" | "plus" }) {
+  const paths = {
+    home: <><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1Z" /><path d="M9 21v-6h6v6" /></>,
+    search: <><circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" /></>,
+    heart: <path d="M20.8 8.8c0 5.5-8.8 10.2-8.8 10.2S3.2 14.3 3.2 8.8A4.5 4.5 0 0 1 12 6.5a4.5 4.5 0 0 1 8.8 2.3Z" />,
+    chat: <><path d="M20 11.5a7.5 7.5 0 0 1-8 7.5 8 8 0 0 1-3.5-.8L4 20l1.5-4A7.3 7.3 0 0 1 4 11.5 7.5 7.5 0 0 1 12 4a7.5 7.5 0 0 1 8 7.5Z" /><path d="M8 11.5h.01M12 11.5h.01M16 11.5h.01" /></>,
+    phone: <><path d="M6.5 3.5 9 7 7 9c1 2.2 2.8 4 5 5l2-2 3.5 2.5-.8 3.2c-.2.8-1 1.3-1.8 1.2C8.3 18.1 3.9 13.7 3.1 7.1c-.1-.8.4-1.6 1.2-1.8Z" /><path d="M14 4a6 6 0 0 1 6 6M14 7a3 3 0 0 1 3 3" /></>,
+    share: <><circle cx="18" cy="5" r="2" /><circle cx="6" cy="12" r="2" /><circle cx="18" cy="19" r="2" /><path d="m8 11 8-5M8 13l8 5" /></>,
+    user: <><circle cx="12" cy="7" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></>,
+    plus: <><path d="M12 5v14M5 12h14" /></>,
+  };
+  return <svg viewBox="0 0 24 24" aria-hidden="true">{paths[name]}</svg>;
+}
+
 export default function App() {
   const telegram = window.Telegram?.WebApp;
   const telegramUser = telegram?.initDataUnsafe.user;
-  const [mode, setMode] = useState<"rent" | "broker">("rent");
-  const [search, setSearch] = useState("");
   const [listings, setListings] = useState(initialListings);
-  const [selectedType, setSelectedType] = useState("All");
-  const [form, setForm] = useState({
-    title: "",
-    area: "",
-    price: "",
-    beds: "2",
-    baths: "1",
-    type: "Apartment",
-    broker: "",
-    description: "",
-  });
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [mode, setMode] = useState<"home" | "broker">("home");
+  const [saved, setSaved] = useState<number[]>([]);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [form, setForm] = useState({ title: "", area: "", price: "", beds: "2", baths: "1", broker: "", description: "" });
 
   useEffect(() => {
     if (!telegram) return;
-
     telegram.ready();
     telegram.expand();
-
-    Object.entries(telegram.themeParams).forEach(([key, value]) => {
-      document.documentElement.style.setProperty(`--tg-${key.replaceAll("_", "-")}`, value);
-    });
   }, [telegram]);
 
-  const filteredListings = useMemo(() => {
-    return listings.filter((listing) => {
-      const matchesSearch =
-        listing.title.toLowerCase().includes(search.toLowerCase()) ||
-        listing.area.toLowerCase().includes(search.toLowerCase()) ||
-        listing.broker.toLowerCase().includes(search.toLowerCase());
-      const matchesType = selectedType === "All" || listing.type === selectedType;
-      return matchesSearch && matchesType;
-    });
-  }, [listings, search, selectedType]);
+  const visibleListings = listings.filter((listing) => {
+    const query = search.toLowerCase();
+    return !query || `${listing.title} ${listing.area} ${listing.broker}`.toLowerCase().includes(query);
+  });
+  const listing = visibleListings[activeIndex] ?? visibleListings[0];
 
-  const handlePostListing = (event: React.FormEvent) => {
-    event.preventDefault();
-    setListings((current) => [
-      {
-        id: Date.now(),
-        title: form.title,
-        area: form.area,
-        price: Number(form.price),
-        beds: Number(form.beds),
-        baths: Number(form.baths),
-        type: form.type,
-        broker: form.broker,
-        verified: false,
-        description: form.description,
-      },
-      ...current,
-    ]);
-    setForm({
-      title: "",
-      area: "",
-      price: "",
-      beds: "2",
-      baths: "1",
-      type: "Apartment",
-      broker: "",
-      description: "",
-    });
-    setMode("rent");
-  };
-
-  const notifyTelegram = (message: string, payload?: object) => {
+  const notify = (message: string, payload?: object) => {
     if (telegram) {
-      if (payload && telegram.isVersionAtLeast?.("6.1")) {
-        telegram.sendData(JSON.stringify(payload));
-      }
+      if (payload && telegram.isVersionAtLeast?.("6.1")) telegram.sendData(JSON.stringify(payload));
       telegram.showAlert(message);
-      return;
-    }
-
-    window.alert(message);
+    } else window.alert(message);
   };
 
-  const handleViewingRequest = (listing: Listing) => {
-    notifyTelegram(`Your viewing request for “${listing.title}” was sent to ${listing.broker}.`, {
-      action: "request_viewing",
-      listingId: listing.id,
-      renter: telegramUser?.username ?? telegramUser?.first_name ?? "guest",
-    });
+  const requestViewing = () => {
+    if (!listing) return;
+    notify(`Viewing request sent for ${listing.title}.`, { action: "request_viewing", listingId: listing.id });
   };
 
-  return (
-    <div className="app-shell">
-      <div className="backdrop backdrop-a" />
-      <div className="backdrop backdrop-b" />
+  const handlePost = (event: React.FormEvent) => {
+    event.preventDefault();
+    const newListing: Listing = {
+      id: Date.now(), title: form.title, area: form.area, price: Number(form.price), beds: Number(form.beds), baths: Number(form.baths),
+      type: "Apartment", broker: form.broker, verified: false, description: form.description,
+      image: "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=85",
+    };
+    setListings((current) => [newListing, ...current]);
+    setActiveIndex(0);
+    setMode("home");
+    setForm({ title: "", area: "", price: "", beds: "2", baths: "1", broker: "", description: "" });
+  };
 
-      <main className="phone-frame">
-        <header className="topbar">
-          <div>
-            <p className="eyebrow">Telegram Mini App</p>
-            <h1>HomeBridge</h1>
-          </div>
-          <div className="status-pill">Live broker feed</div>
-        </header>
+  if (mode === "broker") {
+    return <main className="broker-screen">
+      <button className="back-button" onClick={() => setMode("home")}>Back to homes</button>
+      <div className="broker-heading"><span className="eyebrow">For brokers</span><h1>Post a home</h1><p>Reach renters looking for their next place in Addis Ababa.</p></div>
+      <form className="listing-form" onSubmit={handlePost}>
+        <input required placeholder="Home title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+        <input required placeholder="Area / neighborhood" value={form.area} onChange={(e) => setForm({ ...form, area: e.target.value })} />
+        <div className="form-row"><input required type="number" min="0" placeholder="Monthly price" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} /><select value={form.beds} onChange={(e) => setForm({ ...form, beds: e.target.value })}><option value="1">1 bedroom</option><option value="2">2 bedrooms</option><option value="3">3 bedrooms</option><option value="4">4 bedrooms</option></select></div>
+        <input required placeholder="Broker / agency name" value={form.broker} onChange={(e) => setForm({ ...form, broker: e.target.value })} />
+        <textarea required rows={5} placeholder="Short description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+        <button className="publish-button" type="submit">Publish listing</button>
+      </form>
+    </main>;
+  }
 
-        <section className="hero-card">
-          <div className="hero-copy">
-            <p className="hero-tag">
-              {telegramUser ? `Welcome, ${telegramUser.first_name}.` : "Find homes faster."} Post listings in seconds.
-            </p>
-            <h2>Connect renters and brokers in one simple mini app.</h2>
-            <p className="hero-text">
-              Renters can browse verified homes, send view requests, and chat with brokers.
-              Brokers can publish new homes and respond to interested renters from the same place.
-            </p>
-          </div>
-
-          <div className="mode-switch" role="tablist" aria-label="App mode">
-            <button className={mode === "rent" ? "active" : ""} onClick={() => setMode("rent")}>
-              I want to rent
-            </button>
-            <button className={mode === "broker" ? "active" : ""} onClick={() => setMode("broker")}>
-              I’m a broker
-            </button>
-          </div>
-        </section>
-
-        {mode === "rent" ? (
-          <>
-            <section className="toolbar">
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by area, broker, or home name"
-              />
-              <select value={selectedType} onChange={(e) => setSelectedType(e.target.value)}>
-                <option>All</option>
-                <option>Apartment</option>
-                <option>House</option>
-                <option>Studio</option>
-              </select>
-            </section>
-
-            <section className="listing-grid">
-              {filteredListings.map((listing) => (
-                <article className="listing-card" key={listing.id}>
-                  <div className="listing-top">
-                    <div>
-                      <p className="listing-type">{listing.type}</p>
-                      <h3>{listing.title}</h3>
-                    </div>
-                    {listing.verified && <span className="verified-badge">Verified</span>}
-                  </div>
-                  <p className="listing-area">{listing.area}</p>
-                  <p className="listing-desc">{listing.description}</p>
-                  <div className="listing-meta">
-                    <span>{listing.beds} beds</span>
-                    <span>{listing.baths} baths</span>
-                    <span>{formatCurrency(listing.price)}/mo</span>
-                  </div>
-                  <div className="listing-footer">
-                    <strong>{listing.broker}</strong>
-                    <button className="primary-button" onClick={() => handleViewingRequest(listing)}>
-                      Request viewing
-                    </button>
-                  </div>
-                </article>
-              ))}
-            </section>
-          </>
-        ) : (
-          <section className="broker-panel">
-            <div className="panel-copy">
-              <h3>Post a new home</h3>
-              <p>
-                Add a listing and it appears in the renter feed immediately. This is a clean
-                starting point for Telegram bot integration, payment collection, or broker
-                verification later.
-              </p>
-            </div>
-
-            <form className="listing-form" onSubmit={handlePostListing}>
-              <input
-                required
-                placeholder="Home title"
-                value={form.title}
-                onChange={(e) => setForm({ ...form, title: e.target.value })}
-              />
-              <input
-                required
-                placeholder="Area / neighborhood"
-                value={form.area}
-                onChange={(e) => setForm({ ...form, area: e.target.value })}
-              />
-              <div className="form-row">
-                <input
-                  required
-                  type="number"
-                  min="0"
-                  placeholder="Monthly price"
-                  value={form.price}
-                  onChange={(e) => setForm({ ...form, price: e.target.value })}
-                />
-                <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
-                  <option>Apartment</option>
-                  <option>House</option>
-                  <option>Studio</option>
-                </select>
-              </div>
-              <div className="form-row">
-                <input
-                  required
-                  type="number"
-                  min="0"
-                  placeholder="Beds"
-                  value={form.beds}
-                  onChange={(e) => setForm({ ...form, beds: e.target.value })}
-                />
-                <input
-                  required
-                  type="number"
-                  min="0"
-                  placeholder="Baths"
-                  value={form.baths}
-                  onChange={(e) => setForm({ ...form, baths: e.target.value })}
-                />
-              </div>
-              <input
-                required
-                placeholder="Broker / agency name"
-                value={form.broker}
-                onChange={(e) => setForm({ ...form, broker: e.target.value })}
-              />
-              <textarea
-                required
-                rows={4}
-                placeholder="Short description"
-                value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
-              />
-              <button className="primary-button submit-button" type="submit">
-                Publish listing
-              </button>
-            </form>
-          </section>
-        )}
-
-        <footer className="bottom-bar">
-          <div>
-            <strong>3 active homes</strong>
-            <p>Built for Telegram chat-first discovery</p>
-          </div>
-          <button
-            className="secondary-button"
-            onClick={() => notifyTelegram("Broker inbox is ready for the Telegram bot connection.")}
-          >
-            Open broker inbox
-          </button>
-        </footer>
-      </main>
-    </div>
-  );
+  return <main className="home-screen">
+    {listing ? <section className="property-story" style={{ backgroundImage: `url(${listing.image})` }}>
+      <div className="story-shade" />
+      <header className="story-header">
+        <button className="live-button"><span className="live-dot" /> HOMES</button>
+        <div className="story-tabs"><button className="muted-tab">Discover</button><button className="selected-tab">For rent</button></div>
+        <button className="icon-button" onClick={() => setSearchOpen((open) => !open)}><Icon name="search" /></button>
+      </header>
+      {searchOpen && <div className="search-box"><Icon name="search" /><input autoFocus placeholder="Search area or broker" value={search} onChange={(e) => setSearch(e.target.value)} /></div>}
+      <div className="story-content">
+        <div className="story-copy"><span className="listing-kicker">{listing.type} {listing.verified && "• Verified"}</span><h1>{listing.title}</h1><p className="story-location">{listing.area}</p><p>{listing.description}</p><div className="story-meta"><strong>{formatCurrency(listing.price)}<small>/month</small></strong><span>{listing.beds} beds</span><span>{listing.baths} baths</span></div><button className="view-button" onClick={requestViewing}>Request viewing</button></div>
+        <aside className="action-rail">
+          <button className="broker-avatar" onClick={() => notify(`Broker: ${listing.broker}`)}><span>{listing.broker.charAt(0)}</span></button>
+          <button className={saved.includes(listing.id) ? "action active" : "action"} onClick={() => setSaved((items) => items.includes(listing.id) ? items.filter((id) => id !== listing.id) : [...items, listing.id])}><Icon name="heart" /><small>{saved.includes(listing.id) ? "Saved" : "Save"}</small></button>
+          <button className="action" onClick={() => notify(`Chat with ${listing.broker} will be connected to your bot inbox.`)}><Icon name="chat" /><small>Chat</small></button>
+          <button className="action" onClick={() => notify("Share link is ready for Telegram.")}><Icon name="share" /><small>Share</small></button>
+        </aside>
+      </div>
+      <div className="story-progress">{visibleListings.map((item, index) => <button key={item.id} className={index === activeIndex ? "current" : ""} onClick={() => setActiveIndex(index)} aria-label={`Show home ${index + 1}`} />)}</div>
+    </section> : <div className="empty-state"><h1>No homes found</h1><p>Try another area or broker name.</p></div>}
+    <nav className="bottom-nav"><button className="nav-item active"><Icon name="home" /><span>Homes</span><b>9</b></button><button className="add-home" onClick={() => setMode("broker")}><Icon name="plus" /></button><button className="nav-item" onClick={() => notify(telegramUser ? `${telegramUser.first_name}'s profile is coming soon.` : "Profile is coming soon.")}><Icon name="user" /><span>Profile</span></button></nav>
+  </main>;
 }
