@@ -56,6 +56,7 @@ svg { width: 28px; height: 28px; fill: none; stroke: currentColor; stroke-width:
 .broker-avatar svg { width: 26px; height: 26px; }
 .action { display: grid; justify-items: center; gap: 3px; background: transparent; color: #fff; }
 .action svg { width: 29px; height: 29px; }
+.action small { font-family: "Noto Sans Ethiopic", "Nyala", "Abyssinica SIL", sans-serif; font-size: 0.66rem; font-weight: 700; line-height: 1.2; }
 .action.active { color: #ff7c9b; }
 .story-progress { position: absolute; bottom: calc(86px + env(safe-area-inset-bottom)); left: 18px; right: 18px; display: flex; gap: 5px; z-index: 2; }
 .story-progress button { height: 3px; flex: 1; border-radius: 4px; background: rgba(255, 255, 255, 0.35); }

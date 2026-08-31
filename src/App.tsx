@@ -228,7 +228,7 @@ export default function App() {
         <aside className="action-rail">
           <button className="broker-avatar" onClick={() => notify(`Broker: ${item.broker}`)} aria-label="Open broker"><Icon name="user" /></button>
           <button className={saved.includes(item.id) ? "action active" : "action"} onClick={() => setSaved((items) => items.includes(item.id) ? items.filter((id) => id !== item.id) : [...items, item.id])} aria-label="Save home"><Icon name="heart" /></button>
-          <button className="action" onClick={() => notify(`Call ${item.broker} will be connected to Telegram.`)} aria-label="Call broker"><Icon name="phone" /></button>
+          <button className="action" onClick={() => notify(`Call ${item.broker} will be connected to Telegram.`)} aria-label="Call broker"><Icon name="phone" /><small className="amharic">ደውል</small></button>
           <button className="action" onClick={() => notify(`Address: ${item.area}`)} aria-label="Show address"><Icon name="share" /></button>
         </aside>
         <div className="story-progress"><button className="current" aria-label={`Home ${index + 1} of ${visibleListings.length}`} /></div>
