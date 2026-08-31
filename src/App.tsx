@@ -57,6 +57,19 @@ const initialListings: Listing[] = [
   },
 ];
 
+const locationSuggestions = [
+  "Akaki Kality",
+  "Bole",
+  "CMC",
+  "Piazza",
+  "Kazanchis",
+  "Megenagna",
+  "Sar Bet",
+  "Old Airport",
+  "Gerji",
+  "Summit",
+];
+
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -234,7 +247,7 @@ export default function App() {
       <div className="story-tabs"><button className="muted-tab amharic">ሱቅ</button><button className="selected-tab amharic">ቤት</button></div>
       <button className="icon-button" onClick={() => setSearchOpen((open) => !open)} aria-label="Search homes"><Icon name="search" /></button>
     </header>
-    {searchOpen && <div className="search-box"><Icon name="search" /><input autoFocus placeholder="Search area or broker" value={search} onChange={(e) => setSearch(e.target.value)} /></div>}
+    {searchOpen && <div className="search-box"><Icon name="search" /><input autoFocus list="home-location-suggestions" placeholder="Search area or broker" value={search} onChange={(e) => setSearch(e.target.value)} /><datalist id="home-location-suggestions">{locationSuggestions.map((location) => <option key={location} value={location} />)}</datalist></div>}
     {listing ? <div className="property-feed" ref={feedRef} onScroll={(event) => setActiveIndex(Math.round(event.currentTarget.scrollTop / event.currentTarget.clientHeight))}>
       {visibleListings.map((item, index) => <section className="property-story" key={item.id}>
         <div
