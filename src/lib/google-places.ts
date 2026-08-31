@@ -2,7 +2,6 @@
 
 const googleMapsKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 let googleMapsPromise: Promise<void> | null = null;
-let sessionToken: google.maps.places.AutocompleteSessionToken | undefined;
 
 export const isGooglePlacesConfigured = Boolean(googleMapsKey);
 
@@ -46,19 +45,20 @@ export async function searchGooglePlaces(input: string): Promise<PlaceSuggestion
 
   await loadGoogleMaps();
   const places = await google.maps.importLibrary("places") as google.maps.PlacesLibrary;
-  if (!places?.AutocompleteSuggestion) throw new Error("Google Places library is unavailable.");
-  sessionToken ??= new places.AutocompleteSessionToken();
+  if (!places?.AutocompleteService) throw new Error("Google Places library is unavailable.");
 
-  const { suggestions } = await places.AutocompleteSuggestion.fetchAutocompleteSuggestions({
-    input: input.trim(),
-    includedRegionCodes: ["et"],
-    language: "en",
-    sessionToken,
+  const service = new places.AutocompleteService();
+  return new Promise((resolve, reject) => {
+    service.getPlacePredictions({
+      input: input.trim(),
+      componentRestrictions: { country: "et" },
+      types: ["geocode"],
+    }, (predictions, status) => {
+      if (status !== google.maps.places.PlacesServiceStatus.OK && status !== google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
+        reject(new Error(`Google Places request failed: ${status}`));
+        return;
+      }
+      resolve((predictions ?? []).slice(0, 5).map((prediction) => ({ id: prediction.place_id, name: prediction.description })));
+    });
   });
-
-  return suggestions
-    .map((suggestion) => suggestion.placePrediction)
-    .filter((prediction): prediction is google.maps.places.PlacePrediction => Boolean(prediction))
-    .slice(0, 5)
-    .map((prediction) => ({ id: prediction.placeId, name: prediction.text.text }));
 }
