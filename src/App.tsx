@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { isSupabaseConfigured, supabase } from "./lib/supabase";
-import { isGooglePlacesConfigured, searchGooglePlaces, type PlaceSuggestion } from "./lib/google-places";
+import { searchPlaces, type PlaceSuggestion } from "./lib/photon-places";
 
 type Listing = {
   id: number;
@@ -128,14 +128,14 @@ export default function App() {
   }, [telegram]);
 
   useEffect(() => {
-    if (!searchOpen || !isGooglePlacesConfigured || search.trim().length < 2) {
+    if (!searchOpen || search.trim().length < 2) {
       setPlaceSuggestions([]);
       return;
     }
 
     let cancelled = false;
     const timer = window.setTimeout(() => {
-      void searchGooglePlaces(search).then((suggestions) => {
+      void searchPlaces(search).then((suggestions) => {
         if (!cancelled) setPlaceSuggestions(suggestions);
       }).catch(() => {
         if (!cancelled) setPlaceSuggestions([]);
@@ -154,22 +154,16 @@ export default function App() {
       setAreaSearchError("");
       return;
     }
-    if (!isGooglePlacesConfigured) {
-      setAreaSuggestions([]);
-      setAreaSearchError("Google Places is not configured in this deployment.");
-      return;
-    }
-
     let cancelled = false;
     setAreaSearchError("");
     const timer = window.setTimeout(() => {
-      void searchGooglePlaces(form.area).then((suggestions) => {
+      void searchPlaces(form.area).then((suggestions) => {
         if (!cancelled) setAreaSuggestions(suggestions);
       }).catch((error) => {
-        console.error("Google Places autocomplete failed", error);
+        console.error("Photon address autocomplete failed", error);
         if (!cancelled) {
           setAreaSuggestions([]);
-          setAreaSearchError(error instanceof Error ? error.message : "Google Places rejected the request.");
+          setAreaSearchError(error instanceof Error ? error.message : "Address search failed.");
         }
       });
     }, 250);
@@ -197,7 +191,7 @@ export default function App() {
   }, []);
 
   const visibleListings = listings.filter((listing) => {
-    // Free typing is for Google autocomplete; filter only after a place is selected.
+    // Free typing is for address autocomplete; filter only after a place is selected.
     const query = selectedPlace?.name.toLowerCase() ?? "";
     return !query || `${listing.title} ${listing.area} ${listing.broker}`.toLowerCase().includes(query);
   });
@@ -276,7 +270,7 @@ export default function App() {
       <div className="broker-heading"><span className="eyebrow amharic">አከራይ</span><h1>Post a home</h1><p>Reach renters looking for their next place in Addis Ababa.</p></div>
       <form className="listing-form" onSubmit={handlePost}>
         <input required placeholder="Home title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
-        <div className="location-field"><input required placeholder="Area / neighborhood" value={form.area} onChange={(e) => { setForm({ ...form, area: e.target.value }); setAreaSuggestions([]); }} />{areaSuggestions.length > 0 && <div className="place-suggestions form-suggestions">{areaSuggestions.map((place) => <button type="button" key={place.id} onClick={() => { setForm({ ...form, area: place.name }); setAreaSuggestions([]); }}><span>{place.name}</span></button>)}<small>Powered by Google</small></div>}{areaSearchError && <p className="location-error">{areaSearchError}</p>}</div>
+        <div className="location-field"><input required placeholder="Area / neighborhood" value={form.area} onChange={(e) => { setForm({ ...form, area: e.target.value }); setAreaSuggestions([]); }} />{areaSuggestions.length > 0 && <div className="place-suggestions form-suggestions">{areaSuggestions.map((place) => <button type="button" key={place.id} onClick={() => { setForm({ ...form, area: place.name }); setAreaSuggestions([]); }}><span>{place.name}</span></button>)}<small>Powered by OpenStreetMap</small></div>}{areaSearchError && <p className="location-error">{areaSearchError}</p>}</div>
         <div className="form-row"><input required type="number" min="0" placeholder="Monthly price" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} /><select value={form.beds} onChange={(e) => setForm({ ...form, beds: e.target.value })}><option value="1">1 bedroom</option><option value="2">2 bedrooms</option><option value="3">3 bedrooms</option><option value="4">4 bedrooms</option></select></div>
         <input required placeholder="Broker / agency name" value={form.broker} onChange={(e) => setForm({ ...form, broker: e.target.value })} />
         <label className="image-picker"><span>{imageFiles.length ? `${imageFiles.length} image${imageFiles.length === 1 ? "" : "s"} selected (max 10)` : "Choose 1 to 10 home photos"}</span><input required={isSupabaseConfigured} type="file" accept="image/png,image/jpeg,image/webp" multiple onChange={(e) => setImageFiles(Array.from(e.target.files ?? []).slice(0, 10))} /></label>
@@ -293,7 +287,7 @@ export default function App() {
       <div className="story-tabs"><button className="muted-tab amharic">ሱቅ</button><button className="selected-tab amharic">ቤት</button></div>
       <button className="icon-button" onClick={() => setSearchOpen((open) => !open)} aria-label="Search homes"><Icon name="search" /></button>
     </header>
-    {searchOpen && <div className="search-box"><div className="search-input-row"><Icon name="search" /><input autoFocus placeholder="Search a real address" value={search} onChange={(e) => { setSearch(e.target.value); setSelectedPlace(null); }} /></div>{placeSuggestions.length > 0 && <div className="place-suggestions">{placeSuggestions.map((place) => <button key={place.id} onClick={() => { setSearch(place.name); setSelectedPlace(place); setPlaceSuggestions([]); }}><span>{place.name}</span></button>)}<small>Powered by Google</small></div>}</div>}
+    {searchOpen && <div className="search-box"><div className="search-input-row"><Icon name="search" /><input autoFocus placeholder="Search a real address" value={search} onChange={(e) => { setSearch(e.target.value); setSelectedPlace(null); }} /></div>{placeSuggestions.length > 0 && <div className="place-suggestions">{placeSuggestions.map((place) => <button key={place.id} onClick={() => { setSearch(place.name); setSelectedPlace(place); setPlaceSuggestions([]); }}><span>{place.name}</span></button>)}<small>Powered by OpenStreetMap</small></div>}</div>}
     {listing ? <div className="property-feed" ref={feedRef} onScroll={(event) => setActiveIndex(Math.round(event.currentTarget.scrollTop / event.currentTarget.clientHeight))}>
       {visibleListings.map((item, index) => <section className="property-story" key={item.id}>
         <div
