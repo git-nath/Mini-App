@@ -35,6 +35,9 @@ svg { width: 28px; height: 28px; fill: none; stroke: currentColor; stroke-width:
 .search-box { position: fixed; top: 78px; left: 16px; right: 16px; z-index: 5; display: flex; gap: 8px; align-items: center; padding: 9px 12px; border-radius: 14px; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(12px); }
 .search-box svg { width: 20px; height: 20px; }
 .search-box input { width: 100%; min-height: 36px; border: 0; outline: 0; color: #fff; background: transparent; font: 0.9rem ui-sans-serif, system-ui, sans-serif; }
+.post-details { position: absolute; z-index: 2; left: 18px; bottom: calc(102px + env(safe-area-inset-bottom)); color: #fff; font-size: 0.76rem; font-weight: 700; line-height: 1.55; text-shadow: 0 2px 5px rgba(0, 0, 0, 0.9); }
+.post-details p { margin: 0; }
+.post-details strong { margin-right: 3px; }
 
 .story-content { margin-top: auto; min-height: 260px; padding: 20px 18px calc(100px + env(safe-area-inset-bottom)); }
 .listing-kicker { display: inline-block; margin-bottom: 8px; color: #ffd0d9; font: 700 0.7rem ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; }

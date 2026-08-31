@@ -220,6 +220,11 @@ export default function App() {
           <div className="story-tabs"><button className="muted-tab amharic">ሱቅ</button><button className="selected-tab amharic">ቤት</button></div>
           <button className="icon-button" onClick={() => setSearchOpen((open) => !open)} aria-label="Search homes"><Icon name="search" /></button>
         </header>
+        <div className="post-details amharic">
+          <p><strong>አድራሻ:</strong> {item.area}</p>
+          <p><strong>ከተማ:</strong> Addis Ababa</p>
+          <p><strong>ቀበሌ:</strong> {item.area.split(",")[0]}</p>
+        </div>
         <aside className="action-rail">
           <button className="broker-avatar" onClick={() => notify(`Broker: ${item.broker}`)} aria-label="Open broker"><Icon name="user" /></button>
           <button className={saved.includes(item.id) ? "action active" : "action"} onClick={() => setSaved((items) => items.includes(item.id) ? items.filter((id) => id !== item.id) : [...items, item.id])} aria-label="Save home"><Icon name="heart" /></button>
