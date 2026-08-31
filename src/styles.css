@@ -17,13 +17,13 @@ button, input, select, textarea { font: inherit; }
 button { border: 0; color: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 
 .home-screen { height: 100vh; height: 100dvh; background: #070707; position: relative; overflow: hidden; }
-.property-feed { height: 100%; overflow-y: auto; scroll-snap-type: y mandatory; scrollbar-width: none; overscroll-behavior-y: contain; }
+.property-feed { height: 100%; overflow-y: auto; scroll-snap-type: y mandatory; scroll-snap-stop: always; scrollbar-width: none; overscroll-behavior-y: contain; touch-action: pan-y; }
 .property-feed::-webkit-scrollbar { display: none; }
 .property-story { height: 100vh; height: 100dvh; position: relative; isolation: isolate; overflow: hidden; scroll-snap-align: start; background-position: center; background-size: cover; display: flex; flex-direction: column; }
 .story-header { z-index: 2; }
-.image-carousel { position: absolute; inset: 0; z-index: 0; display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain; touch-action: pan-x; }
-.image-carousel::-webkit-scrollbar { display: none; }
-.post-image { flex: 0 0 100%; height: 100%; scroll-snap-align: start; background-position: center; background-size: cover; }
+.image-carousel { position: absolute; inset: 0; z-index: 0; overflow: hidden; touch-action: pan-y; }
+.image-track { display: flex; width: 100%; height: 100%; transition: transform 260ms ease-out; will-change: transform; }
+.post-image { flex: 0 0 100%; height: 100%; background-position: center; background-size: cover; }
 
 .story-header { position: relative; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; padding: max(18px, env(safe-area-inset-top)) 18px 12px; }
 .story-header::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgba(0, 0, 0, 0.38), rgba(0, 0, 0, 0.16) 68%, transparent); pointer-events: none; }

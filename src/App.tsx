@@ -115,6 +115,7 @@ export default function App() {
   const [loadError, setLoadError] = useState("");
   const [form, setForm] = useState({ title: "", area: "", price: "", beds: "2", baths: "1", broker: "", description: "" });
   const feedRef = useRef<HTMLDivElement>(null);
+  const touchStart = useRef<{ x: number; y: number; listingId: number } | null>(null);
 
   useEffect(() => {
     if (!telegram) return;
@@ -232,8 +233,30 @@ export default function App() {
     {searchOpen && <div className="search-box"><Icon name="search" /><input autoFocus placeholder="Search area or broker" value={search} onChange={(e) => setSearch(e.target.value)} /></div>}
     {listing ? <div className="property-feed" ref={feedRef} onScroll={(event) => setActiveIndex(Math.round(event.currentTarget.scrollTop / event.currentTarget.clientHeight))}>
       {visibleListings.map((item, index) => <section className="property-story" key={item.id}>
-        <div className="image-carousel" onScroll={(event) => setSlideIndexes((current) => ({ ...current, [item.id]: Math.round(event.currentTarget.scrollLeft / event.currentTarget.clientWidth) }))}>
-          {item.images.map((image) => <div className="post-image" key={image} style={{ backgroundImage: `url(${image})` }} />)}
+        <div
+          className="image-carousel"
+          onTouchStart={(event) => {
+            const touch = event.touches[0];
+            touchStart.current = { x: touch.clientX, y: touch.clientY, listingId: item.id };
+          }}
+          onTouchEnd={(event) => {
+            const start = touchStart.current;
+            const touch = event.changedTouches[0];
+            touchStart.current = null;
+            if (!start || start.listingId !== item.id) return;
+
+            const deltaX = touch.clientX - start.x;
+            const deltaY = touch.clientY - start.y;
+            if (Math.abs(deltaX) < 45 || Math.abs(deltaX) < Math.abs(deltaY)) return;
+
+            const currentSlide = slideIndexes[item.id] ?? 0;
+            const nextSlide = Math.max(0, Math.min(item.images.length - 1, currentSlide + (deltaX < 0 ? 1 : -1)));
+            setSlideIndexes((current) => ({ ...current, [item.id]: nextSlide }));
+          }}
+        >
+          <div className="image-track" style={{ transform: `translateX(-${(slideIndexes[item.id] ?? 0) * 100}%)` }}>
+            {item.images.map((image) => <div className="post-image" key={image} style={{ backgroundImage: `url(${image})` }} />)}
+          </div>
         </div>
         <header className="story-header">
           <button className="live-button"><span className="live-dot" /> HOMES</button>
