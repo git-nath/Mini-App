@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { isSupabaseConfigured, supabase } from "./lib/supabase";
-import { searchPlaces, type PlaceSuggestion } from "./lib/photon-places";
 
 type Listing = {
   id: number;
   title: string;
   area: string;
+  city: string;
+  kebele: string;
   price: number;
   beds: number;
   baths: number;
@@ -76,6 +77,8 @@ function mapListing(row: Record<string, unknown>): Listing {
     id: Number(row.id),
     title: String(row.title),
     area: String(row.area),
+    city: String(row.city ?? ""),
+    kebele: String(row.kebele ?? ""),
     price: Number(row.price),
     beds: Number(row.beds),
     baths: Number(row.baths),
@@ -110,14 +113,10 @@ export default function App() {
   const [slideIndexes, setSlideIndexes] = useState<Record<number, number>>({});
   const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const [selectedPlace, setSelectedPlace] = useState<PlaceSuggestion | null>(null);
-  const [placeSuggestions, setPlaceSuggestions] = useState<PlaceSuggestion[]>([]);
-  const [areaSuggestions, setAreaSuggestions] = useState<PlaceSuggestion[]>([]);
-  const [areaSearchError, setAreaSearchError] = useState("");
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [saving, setSaving] = useState(false);
   const [loadError, setLoadError] = useState("");
-  const [form, setForm] = useState({ title: "", area: "", price: "", beds: "2", baths: "1", broker: "", description: "" });
+  const [form, setForm] = useState({ title: "", area: "", city: "", kebele: "", price: "", beds: "2", baths: "1", broker: "", description: "" });
   const feedRef = useRef<HTMLDivElement>(null);
   const touchStart = useRef<{ x: number; y: number; listingId: number } | null>(null);
 
@@ -126,53 +125,6 @@ export default function App() {
     telegram.ready();
     telegram.expand();
   }, [telegram]);
-
-  useEffect(() => {
-    if (!searchOpen || search.trim().length < 2) {
-      setPlaceSuggestions([]);
-      return;
-    }
-
-    let cancelled = false;
-    const timer = window.setTimeout(() => {
-      void searchPlaces(search).then((suggestions) => {
-        if (!cancelled) setPlaceSuggestions(suggestions);
-      }).catch(() => {
-        if (!cancelled) setPlaceSuggestions([]);
-      });
-    }, 250);
-
-    return () => {
-      cancelled = true;
-      window.clearTimeout(timer);
-    };
-  }, [search, searchOpen]);
-
-  useEffect(() => {
-    if (mode !== "broker" || form.area.trim().length < 2) {
-      setAreaSuggestions([]);
-      setAreaSearchError("");
-      return;
-    }
-    let cancelled = false;
-    setAreaSearchError("");
-    const timer = window.setTimeout(() => {
-      void searchPlaces(form.area).then((suggestions) => {
-        if (!cancelled) setAreaSuggestions(suggestions);
-      }).catch((error) => {
-        console.error("Photon address autocomplete failed", error);
-        if (!cancelled) {
-          setAreaSuggestions([]);
-          setAreaSearchError(error instanceof Error ? error.message : "Address search failed.");
-        }
-      });
-    }, 250);
-
-    return () => {
-      cancelled = true;
-      window.clearTimeout(timer);
-    };
-  }, [form.area, mode]);
 
   useEffect(() => {
     if (!supabase) return;
@@ -191,8 +143,7 @@ export default function App() {
   }, []);
 
   const visibleListings = listings.filter((listing) => {
-    // Free typing is for address autocomplete; filter only after a place is selected.
-    const query = selectedPlace?.name.toLowerCase() ?? "";
+    const query = search.toLowerCase();
     return !query || `${listing.title} ${listing.area} ${listing.broker}`.toLowerCase().includes(query);
   });
   const listing = visibleListings[activeIndex] ?? visibleListings[0];
@@ -235,7 +186,7 @@ export default function App() {
         return;
       }
       const { data, error } = await client.from("listings").insert({
-        title: form.title, area: form.area, city: "Addis Ababa", price: Number(form.price), beds: Number(form.beds), baths: Number(form.baths),
+        title: form.title, area: form.area, city: form.city, kebele: form.kebele, price: Number(form.price), beds: Number(form.beds), baths: Number(form.baths),
         type: "Apartment", broker: form.broker, description: form.description, image_url: uploadedImages[0], image_urls: uploadedImages, verified: false,
       }).select().single();
       setSaving(false);
@@ -247,12 +198,12 @@ export default function App() {
       setActiveIndex(0);
       setMode("home");
       setImageFiles([]);
-      setForm({ title: "", area: "", price: "", beds: "2", baths: "1", broker: "", description: "" });
+      setForm({ title: "", area: "", city: "", kebele: "", price: "", beds: "2", baths: "1", broker: "", description: "" });
       return;
     }
 
     const newListing: Listing = {
-      id: Date.now(), title: form.title, area: form.area, price: Number(form.price), beds: Number(form.beds), baths: Number(form.baths),
+      id: Date.now(), title: form.title, area: form.area, city: form.city, kebele: form.kebele, price: Number(form.price), beds: Number(form.beds), baths: Number(form.baths),
       type: "Apartment", broker: form.broker, verified: false, description: form.description,
       images: ["https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=85"],
     };
@@ -261,7 +212,7 @@ export default function App() {
     setMode("home");
     setImageFiles([]);
     setSaving(false);
-    setForm({ title: "", area: "", price: "", beds: "2", baths: "1", broker: "", description: "" });
+    setForm({ title: "", area: "", city: "", kebele: "", price: "", beds: "2", baths: "1", broker: "", description: "" });
   };
 
   if (mode === "broker") {
@@ -270,7 +221,9 @@ export default function App() {
       <div className="broker-heading"><span className="eyebrow amharic">አከራይ</span><h1>Post a home</h1><p>Reach renters looking for their next place in Addis Ababa.</p></div>
       <form className="listing-form" onSubmit={handlePost}>
         <input required placeholder="Home title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
-        <div className="location-field"><input required placeholder="Area / neighborhood" value={form.area} onChange={(e) => { setForm({ ...form, area: e.target.value }); setAreaSuggestions([]); }} />{areaSuggestions.length > 0 && <div className="place-suggestions form-suggestions">{areaSuggestions.map((place) => <button type="button" key={place.id} onClick={() => { setForm({ ...form, area: place.name }); setAreaSuggestions([]); }}><span>{place.name}</span></button>)}<small>Powered by OpenStreetMap</small></div>}{areaSearchError && <p className="location-error">{areaSearchError}</p>}</div>
+        <input required placeholder="አድራሻ" value={form.area} onChange={(e) => setForm({ ...form, area: e.target.value })} />
+        <input required placeholder="ከተማ" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
+        <input required placeholder="ቀበሌ" value={form.kebele} onChange={(e) => setForm({ ...form, kebele: e.target.value })} />
         <div className="form-row"><input required type="number" min="0" placeholder="Monthly price" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} /><select value={form.beds} onChange={(e) => setForm({ ...form, beds: e.target.value })}><option value="1">1 bedroom</option><option value="2">2 bedrooms</option><option value="3">3 bedrooms</option><option value="4">4 bedrooms</option></select></div>
         <input required placeholder="Broker / agency name" value={form.broker} onChange={(e) => setForm({ ...form, broker: e.target.value })} />
         <label className="image-picker"><span>{imageFiles.length ? `${imageFiles.length} image${imageFiles.length === 1 ? "" : "s"} selected (max 10)` : "Choose 1 to 10 home photos"}</span><input required={isSupabaseConfigured} type="file" accept="image/png,image/jpeg,image/webp" multiple onChange={(e) => setImageFiles(Array.from(e.target.files ?? []).slice(0, 10))} /></label>
@@ -287,7 +240,7 @@ export default function App() {
       <div className="story-tabs"><button className="muted-tab amharic">ሱቅ</button><button className="selected-tab amharic">ቤት</button></div>
       <button className="icon-button" onClick={() => setSearchOpen((open) => !open)} aria-label="Search homes"><Icon name="search" /></button>
     </header>
-    {searchOpen && <div className="search-box"><div className="search-input-row"><Icon name="search" /><input autoFocus placeholder="Search a real address" value={search} onChange={(e) => { setSearch(e.target.value); setSelectedPlace(null); }} /></div>{placeSuggestions.length > 0 && <div className="place-suggestions">{placeSuggestions.map((place) => <button key={place.id} onClick={() => { setSearch(place.name); setSelectedPlace(place); setPlaceSuggestions([]); }}><span>{place.name}</span></button>)}<small>Powered by OpenStreetMap</small></div>}</div>}
+    {searchOpen && <div className="search-box"><div className="search-input-row"><Icon name="search" /><input autoFocus placeholder="Search homes" value={search} onChange={(e) => setSearch(e.target.value)} /></div></div>}
     {listing ? <div className="property-feed" ref={feedRef} onScroll={(event) => setActiveIndex(Math.round(event.currentTarget.scrollTop / event.currentTarget.clientHeight))}>
       {visibleListings.map((item, index) => <section className="property-story" key={item.id}>
         <div
@@ -317,8 +270,8 @@ export default function App() {
         </div>
         <div className="post-details amharic">
           <p><strong>አድራሻ:</strong> {item.area}</p>
-          <p><strong>ከተማ:</strong> Addis Ababa</p>
-          <p><strong>ቀበሌ:</strong> {item.area.split(",")[0]}</p>
+          <p><strong>ከተማ:</strong> {item.city}</p>
+          <p><strong>ቀበሌ:</strong> {item.kebele}</p>
         </div>
         <aside className="action-rail">
           <button className="broker-avatar" onClick={() => notify(`Broker: ${item.broker}`)} aria-label="Open broker"><Icon name="user" /></button>
