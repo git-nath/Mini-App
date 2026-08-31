@@ -129,7 +129,7 @@ export default function App() {
   if (mode === "broker") {
     return <main className="broker-screen">
       <button className="back-button" onClick={() => setMode("home")}>Back to homes</button>
-      <div className="broker-heading"><span className="eyebrow">For brokers</span><h1>Post a home</h1><p>Reach renters looking for their next place in Addis Ababa.</p></div>
+      <div className="broker-heading"><span className="eyebrow amharic">አከራይ</span><h1>Post a home</h1><p>Reach renters looking for their next place in Addis Ababa.</p></div>
       <form className="listing-form" onSubmit={handlePost}>
         <input required placeholder="Home title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
         <input required placeholder="Area / neighborhood" value={form.area} onChange={(e) => setForm({ ...form, area: e.target.value })} />
@@ -146,21 +146,21 @@ export default function App() {
       <div className="story-shade" />
       <header className="story-header">
         <button className="live-button"><span className="live-dot" /> HOMES</button>
-        <div className="story-tabs"><button className="muted-tab">Discover</button><button className="selected-tab">For rent</button></div>
+        <div className="story-tabs"><button className="muted-tab amharic">ሱቅ</button><button className="selected-tab amharic">ቤት</button></div>
         <button className="icon-button" onClick={() => setSearchOpen((open) => !open)}><Icon name="search" /></button>
       </header>
       {searchOpen && <div className="search-box"><Icon name="search" /><input autoFocus placeholder="Search area or broker" value={search} onChange={(e) => setSearch(e.target.value)} /></div>}
       <div className="story-content">
-        <div className="story-copy"><span className="listing-kicker">{listing.type} {listing.verified && "• Verified"}</span><h1>{listing.title}</h1><p className="story-location">{listing.area}</p><p>{listing.description}</p><div className="story-meta"><strong>{formatCurrency(listing.price)}<small>/month</small></strong><span>{listing.beds} beds</span><span>{listing.baths} baths</span></div><button className="view-button" onClick={requestViewing}>Request viewing</button></div>
+        <div className="story-copy"><span className="listing-kicker">{listing.type} {listing.verified && "• Verified"}</span><h1>{listing.title}</h1><p className="story-location"><span className="amharic">ከተማ:</span> Addis Ababa</p><p className="story-location"><span className="amharic">ቀበሌ:</span> {listing.area.split(",")[0]}</p><p>{listing.description}</p><div className="story-meta"><strong>{formatCurrency(listing.price)}<small>/month</small></strong><span>{listing.beds} beds</span><span>{listing.baths} baths</span></div><button className="view-button" onClick={requestViewing}>Request viewing</button></div>
         <aside className="action-rail">
           <button className="broker-avatar" onClick={() => notify(`Broker: ${listing.broker}`)}><span>{listing.broker.charAt(0)}</span></button>
           <button className={saved.includes(listing.id) ? "action active" : "action"} onClick={() => setSaved((items) => items.includes(listing.id) ? items.filter((id) => id !== listing.id) : [...items, listing.id])}><Icon name="heart" /><small>{saved.includes(listing.id) ? "Saved" : "Save"}</small></button>
-          <button className="action" onClick={() => notify(`Chat with ${listing.broker} will be connected to your bot inbox.`)}><Icon name="chat" /><small>Chat</small></button>
-          <button className="action" onClick={() => notify("Share link is ready for Telegram.")}><Icon name="share" /><small>Share</small></button>
+          <button className="action" onClick={() => notify(`Call ${listing.broker} will be connected to Telegram.`)}><Icon name="phone" /><small className="amharic">ደውል</small></button>
+          <button className="action" onClick={() => notify(`Address: ${listing.area}`)}><Icon name="share" /><small className="amharic">አድራሻ</small></button>
         </aside>
       </div>
       <div className="story-progress">{visibleListings.map((item, index) => <button key={item.id} className={index === activeIndex ? "current" : ""} onClick={() => setActiveIndex(index)} aria-label={`Show home ${index + 1}`} />)}</div>
     </section> : <div className="empty-state"><h1>No homes found</h1><p>Try another area or broker name.</p></div>}
-    <nav className="bottom-nav"><button className="nav-item active"><Icon name="home" /><span className="amharic">ቤቶች</span><b>9</b></button><button className="add-home" onClick={() => setMode("broker")}><Icon name="plus" /><span className="amharic">አክል</span></button><button className="nav-item" onClick={() => notify(telegramUser ? `${telegramUser.first_name}'s profile is coming soon.` : "Profile is coming soon.")}><Icon name="user" /><span className="amharic">መገለጫ</span></button></nav>
+    <nav className="bottom-nav"><button className="nav-item active"><Icon name="home" /><span className="amharic">ተከራይ</span><b>9</b></button><button className="add-home" onClick={() => setMode("broker")}><Icon name="plus" /><span className="amharic">አከራይ</span></button><button className="nav-item" onClick={() => notify(telegramUser ? `${telegramUser.first_name}'s profile is coming soon.` : "Profile is coming soon.")}><Icon name="user" /><span className="amharic">ተከራይ</span></button></nav>
   </main>;
 }
