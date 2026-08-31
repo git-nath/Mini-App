@@ -16,6 +16,8 @@ create table if not exists public.listings (
 );
 
 alter table public.listings add column if not exists image_urls jsonb not null default '[]'::jsonb;
+alter table public.listings add column if not exists latitude double precision;
+alter table public.listings add column if not exists longitude double precision;
 
 alter table public.listings enable row level security;
 

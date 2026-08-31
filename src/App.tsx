@@ -14,6 +14,8 @@ type Listing = {
   verified: boolean;
   description: string;
   images: string[];
+  latitude?: number;
+  longitude?: number;
 };
 
 const initialListings: Listing[] = [
@@ -84,6 +86,8 @@ function mapListing(row: Record<string, unknown>): Listing {
     verified: Boolean(row.verified),
     description: String(row.description),
     images: images.length ? images : [String(row.image_url)],
+    latitude: Number.isFinite(Number(row.latitude)) ? Number(row.latitude) : undefined,
+    longitude: Number.isFinite(Number(row.longitude)) ? Number(row.longitude) : undefined,
   };
 }
 
@@ -101,6 +105,16 @@ function Icon({ name }: { name: "home" | "search" | "heart" | "chat" | "phone" |
   return <svg viewBox="0 0 24 24" aria-hidden="true">{paths[name]}</svg>;
 }
 
+function LocationPreview({ latitude, longitude }: { latitude: number; longitude: number }) {
+  const delta = 0.012;
+  const params = new URLSearchParams({
+    bbox: `${longitude - delta},${latitude - delta},${longitude + delta},${latitude + delta}`,
+    layer: "mapnik",
+    marker: `${latitude},${longitude}`,
+  });
+  return <div className="location-preview"><iframe title="Selected address map preview" src={`https://www.openstreetmap.org/export/embed.html?${params.toString()}`} loading="lazy" /><a href={`https://www.openstreetmap.org/?mlat=${latitude}&mlon=${longitude}#map=16/${latitude}/${longitude}`} target="_blank" rel="noreferrer">Open map</a></div>;
+}
+
 export default function App() {
   const telegram = window.Telegram?.WebApp;
   const telegramUser = telegram?.initDataUnsafe.user;
@@ -115,6 +129,7 @@ export default function App() {
   const [areaSuggestions, setAreaSuggestions] = useState<PlaceSuggestion[]>([]);
   const [areaSearchError, setAreaSearchError] = useState("");
   const [locating, setLocating] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [saving, setSaving] = useState(false);
   const [loadError, setLoadError] = useState("");
@@ -238,6 +253,7 @@ export default function App() {
       const { data, error } = await client.from("listings").insert({
         title: form.title, area: form.area, city: "Addis Ababa", price: Number(form.price), beds: Number(form.beds), baths: Number(form.baths),
         type: "Apartment", broker: form.broker, description: form.description, image_url: uploadedImages[0], image_urls: uploadedImages, verified: false,
+        latitude: selectedLocation?.latitude ?? null, longitude: selectedLocation?.longitude ?? null,
       }).select().single();
       setSaving(false);
       if (error) {
@@ -248,6 +264,7 @@ export default function App() {
       setActiveIndex(0);
       setMode("home");
       setImageFiles([]);
+      setSelectedLocation(null);
       setForm({ title: "", area: "", price: "", beds: "2", baths: "1", broker: "", description: "" });
       return;
     }
@@ -256,11 +273,13 @@ export default function App() {
       id: Date.now(), title: form.title, area: form.area, price: Number(form.price), beds: Number(form.beds), baths: Number(form.baths),
       type: "Apartment", broker: form.broker, verified: false, description: form.description,
       images: ["https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=85"],
+      latitude: selectedLocation?.latitude, longitude: selectedLocation?.longitude,
     };
     setListings((current) => [newListing, ...current]);
     setActiveIndex(0);
     setMode("home");
     setImageFiles([]);
+    setSelectedLocation(null);
     setSaving(false);
     setForm({ title: "", area: "", price: "", beds: "2", baths: "1", broker: "", description: "" });
   };
@@ -278,6 +297,7 @@ export default function App() {
         const place = await reverseGeocode(coords.latitude, coords.longitude);
         if (!place) throw new Error("No address was found for your current location.");
         setForm((current) => ({ ...current, area: place.name }));
+        setSelectedLocation({ latitude: coords.latitude, longitude: coords.longitude });
         setAreaSuggestions([]);
       } catch (error) {
         setAreaSearchError(error instanceof Error ? error.message : "Current location lookup failed.");
@@ -296,7 +316,7 @@ export default function App() {
       <div className="broker-heading"><span className="eyebrow amharic">አከራይ</span><h1>Post a home</h1><p>Reach renters looking for their next place in Addis Ababa.</p></div>
       <form className="listing-form" onSubmit={handlePost}>
         <input required placeholder="Home title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
-        <div className="location-field"><input required placeholder="Area / neighborhood" value={form.area} onChange={(e) => { setForm({ ...form, area: e.target.value }); setAreaSuggestions([]); }} /><button type="button" className="location-button" onClick={useCurrentLocation} disabled={locating}>{locating ? "Finding your location..." : "Use my current location"}</button>{areaSuggestions.length > 0 && <div className="place-suggestions form-suggestions">{areaSuggestions.map((place) => <button type="button" key={place.id} onClick={() => { setForm({ ...form, area: place.name }); setAreaSuggestions([]); }}><span>{place.name}</span></button>)}<small>Powered by OpenStreetMap</small></div>}{areaSearchError && <p className="location-error">{areaSearchError}</p>}</div>
+        <div className="location-field"><input required placeholder="Area / neighborhood" value={form.area} onChange={(e) => { setForm({ ...form, area: e.target.value }); setSelectedLocation(null); setAreaSuggestions([]); }} /><button type="button" className="location-button" onClick={useCurrentLocation} disabled={locating}>{locating ? "Finding your location..." : "Use my current location"}</button>{areaSuggestions.length > 0 && <div className="place-suggestions form-suggestions">{areaSuggestions.map((place) => <button type="button" key={place.id} onClick={() => { setForm({ ...form, area: place.name }); if (place.latitude !== undefined && place.longitude !== undefined) setSelectedLocation({ latitude: place.latitude, longitude: place.longitude }); setAreaSuggestions([]); }}><span>{place.name}</span></button>)}<small>Powered by OpenStreetMap</small></div>}{areaSearchError && <p className="location-error">{areaSearchError}</p>}{selectedLocation && <LocationPreview {...selectedLocation} />}</div>
         <div className="form-row"><input required type="number" min="0" placeholder="Monthly price" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} /><select value={form.beds} onChange={(e) => setForm({ ...form, beds: e.target.value })}><option value="1">1 bedroom</option><option value="2">2 bedrooms</option><option value="3">3 bedrooms</option><option value="4">4 bedrooms</option></select></div>
         <input required placeholder="Broker / agency name" value={form.broker} onChange={(e) => setForm({ ...form, broker: e.target.value })} />
         <label className="image-picker"><span>{imageFiles.length ? `${imageFiles.length} image${imageFiles.length === 1 ? "" : "s"} selected (max 10)` : "Choose 1 to 10 home photos"}</span><input required={isSupabaseConfigured} type="file" accept="image/png,image/jpeg,image/webp" multiple onChange={(e) => setImageFiles(Array.from(e.target.files ?? []).slice(0, 10))} /></label>

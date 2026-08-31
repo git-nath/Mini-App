@@ -1,6 +1,8 @@
 export type PlaceSuggestion = {
   id: string;
   name: string;
+  latitude?: number;
+  longitude?: number;
 };
 
 type PhotonFeature = {
@@ -14,6 +16,7 @@ type PhotonFeature = {
     country?: string;
   };
   type?: string;
+  geometry?: { coordinates?: number[] };
 };
 
 type PhotonResponse = {
@@ -35,6 +38,11 @@ function formatPlace(feature: PhotonFeature) {
   return [primary, ...context].join(", ");
 }
 
+function coordinates(feature: PhotonFeature) {
+  const [longitude, latitude] = feature.geometry?.coordinates ?? [];
+  return Number.isFinite(latitude) && Number.isFinite(longitude) ? { latitude, longitude } : {};
+}
+
 export async function searchPlaces(input: string): Promise<PlaceSuggestion[]> {
   const query = input.trim();
   if (query.length < 2) return [];
@@ -48,8 +56,9 @@ export async function searchPlaces(input: string): Promise<PlaceSuggestion[]> {
     .map((feature, index) => ({
       id: `${feature.type ?? "place"}-${index}-${formatPlace(feature)}`,
       name: formatPlace(feature),
+      ...coordinates(feature),
     }))
-    .filter((place): place is PlaceSuggestion => Boolean(place.name));
+    .filter((place) => Boolean(place.name));
 }
 
 export async function reverseGeocode(latitude: number, longitude: number): Promise<PlaceSuggestion | null> {
@@ -61,6 +70,6 @@ export async function reverseGeocode(latitude: number, longitude: number): Promi
   const feature = data.features?.[0];
   const name = feature ? formatPlace(feature) : "";
   return feature && name
-    ? { id: `current-${latitude}-${longitude}`, name }
+    ? { id: `current-${latitude}-${longitude}`, name, latitude, longitude }
     : null;
 }
