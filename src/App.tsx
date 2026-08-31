@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { isSupabaseConfigured, supabase } from "./lib/supabase";
 
 type Listing = {
@@ -108,6 +108,7 @@ export default function App() {
   const [saving, setSaving] = useState(false);
   const [loadError, setLoadError] = useState("");
   const [form, setForm] = useState({ title: "", area: "", price: "", beds: "2", baths: "1", broker: "", description: "" });
+  const feedRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!telegram) return;
@@ -144,9 +145,9 @@ export default function App() {
     } else window.alert(message);
   };
 
-  const requestViewing = () => {
-    if (!listing) return;
-    notify(`Viewing request sent for ${listing.title}.`, { action: "request_viewing", listingId: listing.id });
+  const requestViewing = (selectedListing = listing) => {
+    if (!selectedListing) return;
+    notify(`Viewing request sent for ${selectedListing.title}.`, { action: "request_viewing", listingId: selectedListing.id });
   };
 
   const handlePost = async (event: React.FormEvent) => {
@@ -211,21 +212,23 @@ export default function App() {
   }
 
   return <main className="home-screen">
-    {listing ? <section className="property-story" style={{ backgroundImage: `url(${listing.image})` }}>
-      <header className="story-header">
-        <button className="live-button"><span className="live-dot" /> HOMES</button>
-        <div className="story-tabs"><button className="muted-tab amharic">ሱቅ</button><button className="selected-tab amharic">ቤት</button></div>
-        <button className="icon-button" onClick={() => setSearchOpen((open) => !open)}><Icon name="search" /></button>
-      </header>
-      {searchOpen && <div className="search-box"><Icon name="search" /><input autoFocus placeholder="Search area or broker" value={search} onChange={(e) => setSearch(e.target.value)} /></div>}
-      <aside className="action-rail">
-        <button className="broker-avatar" onClick={() => notify(`Broker: ${listing.broker}`)} aria-label="Open broker"><Icon name="user" /></button>
-        <button className={saved.includes(listing.id) ? "action active" : "action"} onClick={() => setSaved((items) => items.includes(listing.id) ? items.filter((id) => id !== listing.id) : [...items, listing.id])} aria-label="Save home"><Icon name="heart" /></button>
-        <button className="action" onClick={() => notify(`Call ${listing.broker} will be connected to Telegram.`)} aria-label="Call broker"><Icon name="phone" /></button>
-        <button className="action" onClick={() => notify(`Address: ${listing.area}`)} aria-label="Show address"><Icon name="share" /></button>
-      </aside>
-      <div className="story-progress">{visibleListings.map((item, index) => <button key={item.id} className={index === activeIndex ? "current" : ""} onClick={() => setActiveIndex(index)} aria-label={`Show home ${index + 1}`} />)}</div>
-    </section> : <div className="empty-state"><h1>No homes found</h1><p>Try another area or broker name.</p></div>}
+    {searchOpen && <div className="search-box"><Icon name="search" /><input autoFocus placeholder="Search area or broker" value={search} onChange={(e) => setSearch(e.target.value)} /></div>}
+    {listing ? <div className="property-feed" ref={feedRef} onScroll={(event) => setActiveIndex(Math.round(event.currentTarget.scrollTop / event.currentTarget.clientHeight))}>
+      {visibleListings.map((item, index) => <section className="property-story" key={item.id} style={{ backgroundImage: `url(${item.image})` }}>
+        <header className="story-header">
+          <button className="live-button"><span className="live-dot" /> HOMES</button>
+          <div className="story-tabs"><button className="muted-tab amharic">ሱቅ</button><button className="selected-tab amharic">ቤት</button></div>
+          <button className="icon-button" onClick={() => setSearchOpen((open) => !open)} aria-label="Search homes"><Icon name="search" /></button>
+        </header>
+        <aside className="action-rail">
+          <button className="broker-avatar" onClick={() => notify(`Broker: ${item.broker}`)} aria-label="Open broker"><Icon name="user" /></button>
+          <button className={saved.includes(item.id) ? "action active" : "action"} onClick={() => setSaved((items) => items.includes(item.id) ? items.filter((id) => id !== item.id) : [...items, item.id])} aria-label="Save home"><Icon name="heart" /></button>
+          <button className="action" onClick={() => notify(`Call ${item.broker} will be connected to Telegram.`)} aria-label="Call broker"><Icon name="phone" /></button>
+          <button className="action" onClick={() => notify(`Address: ${item.area}`)} aria-label="Show address"><Icon name="share" /></button>
+        </aside>
+        <div className="story-progress"><button className="current" aria-label={`Home ${index + 1} of ${visibleListings.length}`} /></div>
+      </section>)}
+    </div> : <div className="empty-state"><h1>No homes found</h1><p>Try another area or broker name.</p></div>}
     <nav className="bottom-nav"><button className="nav-item active"><Icon name="home" /><span className="amharic">ተከራይ</span><b>9</b></button><button className="add-home" onClick={() => setMode("broker")}><Icon name="plus" /><span className="amharic">አከራይ</span></button><button className="nav-item" onClick={() => notify(telegramUser ? `${telegramUser.first_name}'s profile is coming soon.` : "Profile is coming soon.")}><Icon name="user" /><span className="amharic">መገለጫ</span></button></nav>
   </main>;
 }
