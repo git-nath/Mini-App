@@ -229,6 +229,11 @@ export default function App() {
   }
 
   return <main className="home-screen">
+    <header className="story-header feed-header">
+      <button className="live-button"><span className="live-dot" /> HOMES</button>
+      <div className="story-tabs"><button className="muted-tab amharic">ሱቅ</button><button className="selected-tab amharic">ቤት</button></div>
+      <button className="icon-button" onClick={() => setSearchOpen((open) => !open)} aria-label="Search homes"><Icon name="search" /></button>
+    </header>
     {searchOpen && <div className="search-box"><Icon name="search" /><input autoFocus placeholder="Search area or broker" value={search} onChange={(e) => setSearch(e.target.value)} /></div>}
     {listing ? <div className="property-feed" ref={feedRef} onScroll={(event) => setActiveIndex(Math.round(event.currentTarget.scrollTop / event.currentTarget.clientHeight))}>
       {visibleListings.map((item, index) => <section className="property-story" key={item.id}>
@@ -257,11 +262,6 @@ export default function App() {
             {item.images.map((image) => <div className="post-image" key={image} style={{ backgroundImage: `url(${image})` }} />)}
           </div>
         </div>
-        <header className="story-header">
-          <button className="live-button"><span className="live-dot" /> HOMES</button>
-          <div className="story-tabs"><button className="muted-tab amharic">ሱቅ</button><button className="selected-tab amharic">ቤት</button></div>
-          <button className="icon-button" onClick={() => setSearchOpen((open) => !open)} aria-label="Search homes"><Icon name="search" /></button>
-        </header>
         <div className="post-details amharic">
           <p><strong>አድራሻ:</strong> {item.area}</p>
           <p><strong>ከተማ:</strong> Addis Ababa</p>
