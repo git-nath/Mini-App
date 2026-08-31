@@ -143,7 +143,6 @@ export default function App() {
 
   return <main className="home-screen">
     {listing ? <section className="property-story" style={{ backgroundImage: `url(${listing.image})` }}>
-      <div className="story-shade" />
       <header className="story-header">
         <button className="live-button"><span className="live-dot" /> HOMES</button>
         <div className="story-tabs"><button className="muted-tab amharic">ሱቅ</button><button className="selected-tab amharic">ቤት</button></div>
