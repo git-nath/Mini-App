@@ -230,7 +230,7 @@ export default function App() {
 
   return <main className="home-screen">
     <header className="story-header feed-header">
-      <button className="live-button"><span className="live-dot" /> HOMES</button>
+      <button className="live-button">HOMES</button>
       <div className="story-tabs"><button className="muted-tab amharic">ሱቅ</button><button className="selected-tab amharic">ቤት</button></div>
       <button className="icon-button" onClick={() => setSearchOpen((open) => !open)} aria-label="Search homes"><Icon name="search" /></button>
     </header>
