@@ -113,6 +113,7 @@ export default function App() {
   const [selectedPlace, setSelectedPlace] = useState<PlaceSuggestion | null>(null);
   const [placeSuggestions, setPlaceSuggestions] = useState<PlaceSuggestion[]>([]);
   const [areaSuggestions, setAreaSuggestions] = useState<PlaceSuggestion[]>([]);
+  const [areaSearchError, setAreaSearchError] = useState("");
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [saving, setSaving] = useState(false);
   const [loadError, setLoadError] = useState("");
@@ -148,17 +149,28 @@ export default function App() {
   }, [search, searchOpen]);
 
   useEffect(() => {
-    if (mode !== "broker" || !isGooglePlacesConfigured || form.area.trim().length < 2) {
+    if (mode !== "broker" || form.area.trim().length < 2) {
       setAreaSuggestions([]);
+      setAreaSearchError("");
+      return;
+    }
+    if (!isGooglePlacesConfigured) {
+      setAreaSuggestions([]);
+      setAreaSearchError("Google Places is not configured in this deployment.");
       return;
     }
 
     let cancelled = false;
+    setAreaSearchError("");
     const timer = window.setTimeout(() => {
       void searchGooglePlaces(form.area).then((suggestions) => {
         if (!cancelled) setAreaSuggestions(suggestions);
-      }).catch(() => {
-        if (!cancelled) setAreaSuggestions([]);
+      }).catch((error) => {
+        console.error("Google Places autocomplete failed", error);
+        if (!cancelled) {
+          setAreaSuggestions([]);
+          setAreaSearchError(error instanceof Error ? error.message : "Google Places rejected the request.");
+        }
       });
     }, 250);
 
@@ -264,7 +276,7 @@ export default function App() {
       <div className="broker-heading"><span className="eyebrow amharic">አከራይ</span><h1>Post a home</h1><p>Reach renters looking for their next place in Addis Ababa.</p></div>
       <form className="listing-form" onSubmit={handlePost}>
         <input required placeholder="Home title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
-        <div className="location-field"><input required placeholder="Area / neighborhood" value={form.area} onChange={(e) => { setForm({ ...form, area: e.target.value }); setAreaSuggestions([]); }} />{areaSuggestions.length > 0 && <div className="place-suggestions form-suggestions">{areaSuggestions.map((place) => <button type="button" key={place.id} onClick={() => { setForm({ ...form, area: place.name }); setAreaSuggestions([]); }}><span>{place.name}</span></button>)}<small>Powered by Google</small></div>}</div>
+        <div className="location-field"><input required placeholder="Area / neighborhood" value={form.area} onChange={(e) => { setForm({ ...form, area: e.target.value }); setAreaSuggestions([]); }} />{areaSuggestions.length > 0 && <div className="place-suggestions form-suggestions">{areaSuggestions.map((place) => <button type="button" key={place.id} onClick={() => { setForm({ ...form, area: place.name }); setAreaSuggestions([]); }}><span>{place.name}</span></button>)}<small>Powered by Google</small></div>}{areaSearchError && <p className="location-error">{areaSearchError}</p>}</div>
         <div className="form-row"><input required type="number" min="0" placeholder="Monthly price" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} /><select value={form.beds} onChange={(e) => setForm({ ...form, beds: e.target.value })}><option value="1">1 bedroom</option><option value="2">2 bedrooms</option><option value="3">3 bedrooms</option><option value="4">4 bedrooms</option></select></div>
         <input required placeholder="Broker / agency name" value={form.broker} onChange={(e) => setForm({ ...form, broker: e.target.value })} />
         <label className="image-picker"><span>{imageFiles.length ? `${imageFiles.length} image${imageFiles.length === 1 ? "" : "s"} selected (max 10)` : "Choose 1 to 10 home photos"}</span><input required={isSupabaseConfigured} type="file" accept="image/png,image/jpeg,image/webp" multiple onChange={(e) => setImageFiles(Array.from(e.target.files ?? []).slice(0, 10))} /></label>

@@ -89,6 +89,7 @@ svg { width: 28px; height: 28px; fill: none; stroke: currentColor; stroke-width:
 .listing-form { display: grid; gap: 12px; max-width: 600px; }
 .location-field { position: relative; }
 .form-suggestions { position: absolute; z-index: 3; top: calc(100% + 5px); left: 0; right: 0; padding: 8px; border: 1px solid rgba(255,255,255,.12); border-radius: 13px; background: #191919; box-shadow: 0 12px 28px rgba(0,0,0,.35); }
+.location-error { margin: 7px 4px 0; color: #ff9fb5; font: .72rem/1.35 ui-sans-serif, system-ui, sans-serif; }
 .listing-form input, .listing-form select, .listing-form textarea { width: 100%; min-height: 50px; border: 1px solid rgba(255,255,255,.12); border-radius: 13px; padding: 13px; outline: 0; background: rgba(255,255,255,.08); color: #fff; font: .9rem ui-sans-serif, system-ui, sans-serif; }
 .listing-form textarea { resize: vertical; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
