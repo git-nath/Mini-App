@@ -34,8 +34,7 @@ svg { width: 28px; height: 28px; fill: none; stroke: currentColor; stroke-width:
 .search-box svg { width: 20px; height: 20px; }
 .search-box input { width: 100%; min-height: 36px; border: 0; outline: 0; color: #fff; background: transparent; font: 0.9rem ui-sans-serif, system-ui, sans-serif; }
 
-.story-content { margin-top: auto; display: grid; grid-template-columns: 1fr 58px; gap: 12px; align-items: end; padding: 20px 18px calc(100px + env(safe-area-inset-bottom)); }
-.story-copy { max-width: 430px; }
+.story-content { margin-top: auto; min-height: 260px; padding: 20px 18px calc(100px + env(safe-area-inset-bottom)); }
 .listing-kicker { display: inline-block; margin-bottom: 8px; color: #ffd0d9; font: 700 0.7rem ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; }
 .story-copy h1 { max-width: 12ch; margin: 0 0 7px; font-size: clamp(2.05rem, 10vw, 3.4rem); line-height: 0.98; }
 .story-location { margin-bottom: 8px; font: 700 0.88rem ui-sans-serif, system-ui, sans-serif; }
@@ -47,11 +46,11 @@ svg { width: 28px; height: 28px; fill: none; stroke: currentColor; stroke-width:
 .view-button, .publish-button { min-height: 48px; padding: 12px 18px; border-radius: 14px; background: #fff; color: #151515; font: 800 0.82rem ui-sans-serif, system-ui, sans-serif; }
 .view-button { width: min(100%, 250px); }
 
-.action-rail { display: flex; flex-direction: column; align-items: center; gap: 18px; padding-bottom: 2px; }
+.action-rail { position: absolute; right: 16px; bottom: calc(115px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; align-items: center; gap: 22px; }
 .broker-avatar { display: grid; place-items: center; width: 48px; height: 48px; border: 2px solid #fff; border-radius: 50%; background: linear-gradient(135deg, #ff597f, #5e4c9e); font: 800 1.25rem ui-sans-serif, system-ui, sans-serif; }
+.broker-avatar svg { width: 26px; height: 26px; }
 .action { display: grid; justify-items: center; gap: 3px; background: transparent; color: #fff; }
 .action svg { width: 29px; height: 29px; }
-.action small { font: 700 0.62rem ui-sans-serif, system-ui, sans-serif; }
 .action.active { color: #ff7c9b; }
 .story-progress { position: absolute; bottom: calc(86px + env(safe-area-inset-bottom)); left: 18px; right: 18px; display: flex; gap: 5px; z-index: 2; }
 .story-progress button { height: 3px; flex: 1; border-radius: 4px; background: rgba(255, 255, 255, 0.35); }
