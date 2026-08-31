@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+Ethiopic:wght@400;500;600;700;800&display=swap");
+
 :root {
   color-scheme: dark;
   font-family: Georgia, "Times New Roman", serif;
@@ -60,8 +62,10 @@ svg { width: 28px; height: 28px; fill: none; stroke: currentColor; stroke-width:
 .nav-item.active { color: #fff; }
 .nav-item svg { width: 29px; height: 29px; }
 .nav-item b { position: absolute; top: -3px; left: calc(50% + 8px); display: grid; place-items: center; width: 19px; height: 19px; border-radius: 50%; background: var(--pink); color: #fff; font: 700 0.66rem ui-sans-serif, system-ui, sans-serif; }
-.add-home { justify-self: center; display: grid; place-items: center; width: 74px; height: 48px; border-radius: 15px; background: linear-gradient(90deg, #15d7ea 0 12%, #fff 12% 87%, #ff4a79 87%); color: #111; box-shadow: 0 7px 18px rgba(0,0,0,.3); }
+.amharic { font-family: "Noto Sans Ethiopic", "Nyala", "Abyssinica SIL", sans-serif; line-height: 1.2; }
+.add-home { justify-self: center; display: grid; place-items: center; gap: 0; width: 74px; height: 52px; border-radius: 15px; background: linear-gradient(90deg, #15d7ea 0 12%, #fff 12% 87%, #ff4a79 87%); color: #111; box-shadow: 0 7px 18px rgba(0,0,0,.3); }
 .add-home svg { width: 27px; height: 27px; stroke-width: 2.8; }
+.add-home .amharic { font-size: 0.68rem; font-weight: 800; }
 
 .broker-screen { min-height: 100vh; min-height: 100dvh; padding: max(22px, env(safe-area-inset-top)) 18px max(24px, env(safe-area-inset-bottom)); background: radial-gradient(circle at 100% 0, rgba(255, 46, 100, .3), transparent 35%), #101010; }
 .back-button { margin-bottom: 42px; padding: 0; background: transparent; color: rgba(255,255,255,.7); font: 700 .78rem ui-sans-serif, system-ui, sans-serif; }
