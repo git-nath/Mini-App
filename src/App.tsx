@@ -124,7 +124,7 @@ export default function App() {
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [saving, setSaving] = useState(false);
   const [loadError, setLoadError] = useState("");
-  const [form, setForm] = useState({ title: "", area: "", city: "", kebele: "", price: "", beds: "2", baths: "1", broker: "", description: "" });
+  const [form, setForm] = useState({ title: "", area: "", city: "", kebele: "", price: "", beds: "2", baths: "1", description: "" });
   const feedRef = useRef<HTMLDivElement>(null);
   const touchStart = useRef<{ x: number; y: number; listingId: number } | null>(null);
 
@@ -167,6 +167,10 @@ export default function App() {
     if (!selectedListing) return;
     notify(`Viewing request sent for ${selectedListing.title}.`, { action: "request_viewing", listingId: selectedListing.id });
   };
+
+  const telegramBrokerName = telegramUser
+    ? [telegramUser.first_name, telegramUser.last_name].filter(Boolean).join(" ")
+    : "HomeBridge user";
 
   const shareListing = async (selectedListing: Listing) => {
     const url = new URL(window.location.href);
@@ -221,7 +225,7 @@ export default function App() {
       }
       const { data, error } = await client.from("listings").insert({
         title: form.title, area: form.area, city: form.city, kebele: form.kebele, price: Number(form.price), beds: Number(form.beds), baths: Number(form.baths),
-        type: "Apartment", broker: form.broker, description: form.description, image_url: uploadedImages[0], image_urls: uploadedImages, verified: false,
+        type: form.title, broker: telegramBrokerName, description: form.description, image_url: uploadedImages[0], image_urls: uploadedImages, verified: false,
         telegram_user_id: telegramUser ? String(telegramUser.id) : null,
       }).select().single();
       setSaving(false);
@@ -233,13 +237,13 @@ export default function App() {
       setActiveIndex(0);
       setMode("home");
       setImageFiles([]);
-      setForm({ title: "", area: "", city: "", kebele: "", price: "", beds: "2", baths: "1", broker: "", description: "" });
+      setForm({ title: "", area: "", city: "", kebele: "", price: "", beds: "2", baths: "1", description: "" });
       return;
     }
 
     const newListing: Listing = {
       id: Date.now(), title: form.title, area: form.area, city: form.city, kebele: form.kebele, price: Number(form.price), beds: Number(form.beds), baths: Number(form.baths),
-      type: "Apartment", broker: form.broker, verified: false, description: form.description,
+      type: form.title, broker: telegramBrokerName, verified: false, description: form.description,
       images: ["https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=85"],
       ownerId: telegramUser ? String(telegramUser.id) : undefined,
     };
@@ -248,7 +252,7 @@ export default function App() {
     setMode("home");
     setImageFiles([]);
     setSaving(false);
-    setForm({ title: "", area: "", city: "", kebele: "", price: "", beds: "2", baths: "1", broker: "", description: "" });
+    setForm({ title: "", area: "", city: "", kebele: "", price: "", beds: "2", baths: "1", description: "" });
   };
 
   const profileName = telegramUser?.first_name ?? "HomeBridge user";
@@ -275,12 +279,11 @@ export default function App() {
       <button className="back-button" onClick={() => setMode("home")}>Back to homes</button>
       <div className="broker-heading"><span className="eyebrow amharic">አከራይ</span><h1>Post a home</h1><p>Reach renters looking for their next place in Addis Ababa.</p></div>
       <form className="listing-form" onSubmit={handlePost}>
-        <input required placeholder="Home title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+        <select required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}><option value="" disabled>Select ቤት or ሱቅ</option><option value="ቤት">ቤት</option><option value="ሱቅ">ሱቅ</option></select>
         <input required placeholder="አድራሻ" value={form.area} onChange={(e) => setForm({ ...form, area: e.target.value })} />
         <input required placeholder="ከተማ" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
         <input required placeholder="ቀበሌ" value={form.kebele} onChange={(e) => setForm({ ...form, kebele: e.target.value })} />
         <div className="form-row"><input required type="number" min="0" placeholder="Monthly price" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} /><select value={form.beds} onChange={(e) => setForm({ ...form, beds: e.target.value })}><option value="1">1 bedroom</option><option value="2">2 bedrooms</option><option value="3">3 bedrooms</option><option value="4">4 bedrooms</option></select></div>
-        <input required placeholder="Broker / agency name" value={form.broker} onChange={(e) => setForm({ ...form, broker: e.target.value })} />
         <label className="image-picker"><span>{imageFiles.length ? `${imageFiles.length} image${imageFiles.length === 1 ? "" : "s"} selected (max 10)` : "Choose 1 to 10 home photos"}</span><input required={isSupabaseConfigured} type="file" accept="image/png,image/jpeg,image/webp" multiple onChange={(e) => setImageFiles(Array.from(e.target.files ?? []).slice(0, 10))} /></label>
         <textarea required rows={5} placeholder="Short description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
         <button className="publish-button" type="submit" disabled={saving}>{saving ? "Publishing..." : "Publish listing"}</button>
