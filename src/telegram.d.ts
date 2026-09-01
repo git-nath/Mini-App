@@ -15,6 +15,7 @@ declare global {
     ready: () => void;
     expand: () => void;
     sendData: (data: string) => void;
+    openTelegramLink?: (url: string) => void;
     showAlert: (message: string, callback?: () => void) => void;
     isVersionAtLeast?: (version: string) => boolean;
   }
