@@ -166,6 +166,28 @@ export default function App() {
     notify(`Viewing request sent for ${selectedListing.title}.`, { action: "request_viewing", listingId: selectedListing.id });
   };
 
+  const shareListing = async (selectedListing: Listing) => {
+    const url = new URL(window.location.href);
+    url.searchParams.set("listing", String(selectedListing.id));
+    const shareData = {
+      title: selectedListing.title,
+      text: `${selectedListing.title}\nአድራሻ: ${selectedListing.area}\nከተማ: ${selectedListing.city}\nቀበሌ: ${selectedListing.kebele}`,
+      url: url.toString(),
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+        return;
+      }
+      await navigator.clipboard.writeText(`${shareData.text}\n${shareData.url}`);
+      notify("Listing link copied.");
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      notify("Could not share this listing. Please try again.");
+    }
+  };
+
   const handlePost = async (event: React.FormEvent) => {
     event.preventDefault();
     setSaving(true);
@@ -283,7 +305,7 @@ export default function App() {
           <button className="broker-avatar" onClick={() => notify(`Broker: ${item.broker}`)} aria-label="Open broker"><Icon name="user" /></button>
           <button className="action" onClick={() => notify(`Message ${item.broker} will be connected to Telegram.`)} aria-label="Message broker"><Icon name="chat" /><small className="amharic">መልዕክት</small></button>
           <button className="action" onClick={() => notify(`Call ${item.broker} will be connected to Telegram.`)} aria-label="Call broker"><Icon name="phone" /><small className="amharic">ደውል</small></button>
-          <button className="action" onClick={() => notify(`Address: ${item.area}`)} aria-label="Show address"><Icon name="share" /></button>
+          <button className="action" onClick={() => void shareListing(item)} aria-label="Share listing"><Icon name="share" /></button>
         </aside>
         <div className="story-progress">{item.images.map((image, imageIndex) => <button key={image} className={imageIndex === (slideIndexes[item.id] ?? 0) ? "current" : ""} aria-label={`Image ${imageIndex + 1} of ${item.images.length}`} />)}</div>
       </section>)}
