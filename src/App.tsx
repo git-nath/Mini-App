@@ -16,6 +16,7 @@ type Listing = {
   description: string;
   images: string[];
   ownerId?: string;
+  avatarUrl?: string;
 };
 
 const initialListings: Listing[] = [
@@ -95,6 +96,7 @@ function mapListing(row: Record<string, unknown>): Listing {
     description: String(row.description),
     images: images.length ? images : [String(row.image_url)],
     ownerId: row.telegram_user_id ? String(row.telegram_user_id) : undefined,
+    avatarUrl: row.broker_avatar_url ? String(row.broker_avatar_url) : undefined,
   };
 }
 
@@ -118,7 +120,7 @@ export default function App() {
   const [listings, setListings] = useState(initialListings);
   const [activeIndex, setActiveIndex] = useState(0);
   const [mode, setMode] = useState<"home" | "broker" | "profile">("home");
-  const [profileTarget, setProfileTarget] = useState<{ ownerId?: string; name: string; username?: string } | null>(null);
+  const [profileTarget, setProfileTarget] = useState<{ ownerId?: string; name: string; username?: string; avatarUrl?: string } | null>(null);
   const [slideIndexes, setSlideIndexes] = useState<Record<number, number>>({});
   const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -172,6 +174,7 @@ export default function App() {
   const telegramBrokerName = telegramUser
     ? [telegramUser.first_name, telegramUser.last_name].filter(Boolean).join(" ")
     : "HomeBridge user";
+  const telegramAvatarUrl = telegramUser?.photo_url;
 
   const shareListing = async (selectedListing: Listing) => {
     const url = new URL(window.location.href);
@@ -227,7 +230,7 @@ export default function App() {
       const { data, error } = await client.from("listings").insert({
         title: form.title, area: form.area, city: form.city, kebele: form.kebele, price: Number(form.price), beds: Number(form.beds), baths: Number(form.baths),
         type: form.title, broker: telegramBrokerName, description: form.description, image_url: uploadedImages[0], image_urls: uploadedImages, verified: false,
-        telegram_user_id: telegramUser ? String(telegramUser.id) : null,
+        telegram_user_id: telegramUser ? String(telegramUser.id) : null, broker_avatar_url: telegramAvatarUrl ?? null,
       }).select().single();
       setSaving(false);
       if (error) {
@@ -247,6 +250,7 @@ export default function App() {
       type: form.title, broker: telegramBrokerName, verified: false, description: form.description,
       images: ["https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=85"],
       ownerId: telegramUser ? String(telegramUser.id) : undefined,
+      avatarUrl: telegramAvatarUrl,
     };
     setListings((current) => [newListing, ...current]);
     setActiveIndex(0);
@@ -271,7 +275,7 @@ export default function App() {
     return <main className="profile-screen">
       <button className="back-button" onClick={() => setMode("home")}>Back to homes</button>
       <section className="profile-card">
-        <div className="profile-avatar">{profileName.slice(0, 1).toUpperCase()}</div>
+        <div className="profile-avatar">{(profileTarget?.avatarUrl ?? (!profileTarget ? telegramAvatarUrl : undefined)) ? <img src={profileTarget?.avatarUrl ?? telegramAvatarUrl} alt={`${profileName} profile`} /> : profileName.slice(0, 1).toUpperCase()}</div>
         <h1>{profileName}</h1>
         <p>{profileUsername}</p>
         <div className="profile-stats"><span><strong>{profileListings.length}</strong><small>Listings</small></span><span><strong>0</strong><small>Saved</small></span><span><strong>0</strong><small>Contacts</small></span></div>
@@ -340,7 +344,7 @@ export default function App() {
           <p><strong>ቀበሌ:</strong> {item.kebele}</p>
         </div>
         <aside className="action-rail">
-          <button className="broker-avatar" onClick={() => { setProfileTarget({ ownerId: item.ownerId, name: item.broker }); setMode("profile"); }} aria-label={`Open ${item.broker}'s profile`}><Icon name="user" /></button>
+          <button className="broker-avatar" onClick={() => { setProfileTarget({ ownerId: item.ownerId, name: item.broker, avatarUrl: item.avatarUrl }); setMode("profile"); }} aria-label={`Open ${item.broker}'s profile`}>{item.avatarUrl ? <img src={item.avatarUrl} alt="" /> : <Icon name="user" />}</button>
           <button className="action" onClick={() => notify(`Message ${item.broker} will be connected to Telegram.`)} aria-label="Message broker"><Icon name="chat" /><small className="amharic">መልዕክት</small></button>
           <button className="action" onClick={() => notify(`Call ${item.broker} will be connected to Telegram.`)} aria-label="Call broker"><Icon name="phone" /><small className="amharic">ደውል</small></button>
           <button className="action" onClick={() => void shareListing(item)} aria-label="Share listing"><Icon name="share" /></button>

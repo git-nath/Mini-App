@@ -20,6 +20,7 @@ create table if not exists public.listings (
 alter table public.listings add column if not exists image_urls jsonb not null default '[]'::jsonb;
 alter table public.listings add column if not exists kebele text not null default '';
 alter table public.listings add column if not exists telegram_user_id text;
+alter table public.listings add column if not exists broker_avatar_url text;
 
 alter table public.listings enable row level security;
 
