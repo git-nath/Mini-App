@@ -118,6 +118,7 @@ export default function App() {
   const [listings, setListings] = useState(initialListings);
   const [activeIndex, setActiveIndex] = useState(0);
   const [mode, setMode] = useState<"home" | "broker" | "profile">("home");
+  const [profileTarget, setProfileTarget] = useState<{ ownerId?: string; name: string; username?: string } | null>(null);
   const [slideIndexes, setSlideIndexes] = useState<Record<number, number>>({});
   const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -255,9 +256,16 @@ export default function App() {
     setForm({ title: "", area: "", city: "", kebele: "", price: "", beds: "2", baths: "1", description: "" });
   };
 
-  const profileName = telegramUser?.first_name ?? "HomeBridge user";
-  const profileUsername = telegramUser?.username ? `@${telegramUser.username}` : "Your Telegram profile";
-  const myListings = telegramUser ? listings.filter((item) => item.ownerId === String(telegramUser.id)) : [];
+  const profileName = profileTarget?.name ?? telegramUser?.first_name ?? "HomeBridge user";
+  const profileUsername = profileTarget?.username ? `@${profileTarget.username}` : profileTarget ? "HomeBridge broker" : "Your Telegram profile";
+  const profileListings = profileTarget?.ownerId
+    ? listings.filter((item) => item.ownerId === profileTarget.ownerId)
+    : profileTarget
+      ? listings.filter((item) => item.broker === profileTarget.name)
+      : telegramUser
+        ? listings.filter((item) => item.ownerId === String(telegramUser.id))
+        : [];
+  const isOwnProfile = !profileTarget || profileTarget.ownerId === String(telegramUser?.id);
 
   if (mode === "profile") {
     return <main className="profile-screen">
@@ -266,11 +274,11 @@ export default function App() {
         <div className="profile-avatar">{profileName.slice(0, 1).toUpperCase()}</div>
         <h1>{profileName}</h1>
         <p>{profileUsername}</p>
-        <div className="profile-stats"><span><strong>{myListings.length}</strong><small>Listings</small></span><span><strong>0</strong><small>Saved</small></span><span><strong>0</strong><small>Contacts</small></span></div>
-        <button className="profile-edit" onClick={() => setMode("broker")}>Post a home</button>
+        <div className="profile-stats"><span><strong>{profileListings.length}</strong><small>Listings</small></span><span><strong>0</strong><small>Saved</small></span><span><strong>0</strong><small>Contacts</small></span></div>
+        {isOwnProfile && <button className="profile-edit" onClick={() => setMode("broker")}>Post a home</button>}
       </section>
       <div className="profile-tabs"><button className="profile-tab active">Your listings</button><button className="profile-tab">Saved homes</button></div>
-      {myListings.length ? <div className="profile-grid">{myListings.map((item) => <article className="profile-listing" key={item.id}><div className="profile-listing-image" style={{ backgroundImage: `url(${item.images[0]})` }} /><div><h2>{item.title}</h2><p>{item.area}</p><strong>{formatCurrency(item.price)} / month</strong></div></article>)}</div> : <div className="profile-empty"><Icon name="home" /><h2>Your homes will appear here</h2><p>Post a home to connect with renters.</p></div>}
+      {profileListings.length ? <div className="profile-grid">{profileListings.map((item) => <article className="profile-listing" key={item.id}><div className="profile-listing-image" style={{ backgroundImage: `url(${item.images[0]})` }} /><div><h2>{item.title}</h2><p>{item.area}</p><strong>{formatCurrency(item.price)} / month</strong></div></article>)}</div> : <div className="profile-empty"><Icon name="home" /><h2>No homes posted yet</h2><p>Homes posted by this person will appear here.</p></div>}
     </main>;
   }
 
@@ -332,7 +340,7 @@ export default function App() {
           <p><strong>ቀበሌ:</strong> {item.kebele}</p>
         </div>
         <aside className="action-rail">
-          <button className="broker-avatar" onClick={() => notify(`Broker: ${item.broker}`)} aria-label="Open broker"><Icon name="user" /></button>
+          <button className="broker-avatar" onClick={() => { setProfileTarget({ ownerId: item.ownerId, name: item.broker }); setMode("profile"); }} aria-label={`Open ${item.broker}'s profile`}><Icon name="user" /></button>
           <button className="action" onClick={() => notify(`Message ${item.broker} will be connected to Telegram.`)} aria-label="Message broker"><Icon name="chat" /><small className="amharic">መልዕክት</small></button>
           <button className="action" onClick={() => notify(`Call ${item.broker} will be connected to Telegram.`)} aria-label="Call broker"><Icon name="phone" /><small className="amharic">ደውል</small></button>
           <button className="action" onClick={() => void shareListing(item)} aria-label="Share listing"><Icon name="share" /></button>
@@ -340,6 +348,6 @@ export default function App() {
         <div className="story-progress">{item.images.map((image, imageIndex) => <button key={image} className={imageIndex === (slideIndexes[item.id] ?? 0) ? "current" : ""} aria-label={`Image ${imageIndex + 1} of ${item.images.length}`} />)}</div>
       </section>)}
     </div> : <div className="empty-state"><h1>No homes found</h1><p>Try another area or broker name.</p></div>}
-    <nav className="bottom-nav"><button className="nav-item active"><Icon name="home" /><span className="amharic">ተከራይ</span><b>9</b></button><button className="add-home" onClick={() => setMode("broker")}><Icon name="plus" /><span className="amharic">አከራይ</span></button><button className="nav-item" onClick={() => setMode("profile")}><Icon name="user" /><span className="amharic">መገለጫ</span></button></nav>
+    <nav className="bottom-nav"><button className="nav-item active"><Icon name="home" /><span className="amharic">ተከራይ</span><b>9</b></button><button className="add-home" onClick={() => setMode("broker")}><Icon name="plus" /><span className="amharic">አከራይ</span></button><button className="nav-item" onClick={() => { setProfileTarget(null); setMode("profile"); }}><Icon name="user" /><span className="amharic">መገለጫ</span></button></nav>
   </main>;
 }
