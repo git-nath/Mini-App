@@ -95,6 +95,12 @@ svg { width: 28px; height: 28px; fill: none; stroke: currentColor; stroke-width:
 .profile-tabs { display: grid; grid-template-columns: 1fr 1fr; max-width: 520px; margin: 0 auto; border-bottom: 1px solid rgba(255,255,255,.12); }
 .profile-tab { padding: 13px 8px; background: transparent; color: var(--muted); font: 700 .78rem ui-sans-serif, system-ui, sans-serif; }
 .profile-tab.active { border-bottom: 2px solid #fff; color: #fff; }
+.profile-grid { display: grid; gap: 12px; max-width: 520px; margin: 20px auto 0; }
+.profile-listing { display: grid; grid-template-columns: 92px 1fr; gap: 12px; align-items: center; padding: 9px; border: 1px solid rgba(255,255,255,.1); border-radius: 14px; background: rgba(255,255,255,.06); }
+.profile-listing-image { width: 92px; height: 92px; border-radius: 10px; background-position: center; background-size: cover; }
+.profile-listing h2 { margin: 0 0 5px; font-size: 1rem; }
+.profile-listing p { margin: 0 0 7px; color: var(--muted); font: .76rem ui-sans-serif, system-ui, sans-serif; }
+.profile-listing strong { color: #ff91aa; font: 700 .75rem ui-sans-serif, system-ui, sans-serif; }
 .profile-empty { display: grid; justify-items: center; gap: 8px; padding: 80px 20px; text-align: center; color: var(--muted); }
 .profile-empty svg { width: 38px; height: 38px; }
 .profile-empty h2 { margin: 5px 0 0; color: #fff; font-size: 1.25rem; }

@@ -3,6 +3,7 @@ create table if not exists public.listings (
   title text not null,
   area text not null,
   kebele text not null default '',
+  telegram_user_id text,
   city text not null default 'Addis Ababa',
   price integer not null check (price >= 0),
   beds integer not null default 1 check (beds >= 0),
@@ -17,6 +18,8 @@ create table if not exists public.listings (
 );
 
 alter table public.listings add column if not exists image_urls jsonb not null default '[]'::jsonb;
+alter table public.listings add column if not exists kebele text not null default '';
+alter table public.listings add column if not exists telegram_user_id text;
 
 alter table public.listings enable row level security;
 

@@ -15,6 +15,7 @@ type Listing = {
   verified: boolean;
   description: string;
   images: string[];
+  ownerId?: string;
 };
 
 const initialListings: Listing[] = [
@@ -93,6 +94,7 @@ function mapListing(row: Record<string, unknown>): Listing {
     verified: Boolean(row.verified),
     description: String(row.description),
     images: images.length ? images : [String(row.image_url)],
+    ownerId: row.telegram_user_id ? String(row.telegram_user_id) : undefined,
   };
 }
 
@@ -220,6 +222,7 @@ export default function App() {
       const { data, error } = await client.from("listings").insert({
         title: form.title, area: form.area, city: form.city, kebele: form.kebele, price: Number(form.price), beds: Number(form.beds), baths: Number(form.baths),
         type: "Apartment", broker: form.broker, description: form.description, image_url: uploadedImages[0], image_urls: uploadedImages, verified: false,
+        telegram_user_id: telegramUser ? String(telegramUser.id) : null,
       }).select().single();
       setSaving(false);
       if (error) {
@@ -238,6 +241,7 @@ export default function App() {
       id: Date.now(), title: form.title, area: form.area, city: form.city, kebele: form.kebele, price: Number(form.price), beds: Number(form.beds), baths: Number(form.baths),
       type: "Apartment", broker: form.broker, verified: false, description: form.description,
       images: ["https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=85"],
+      ownerId: telegramUser ? String(telegramUser.id) : undefined,
     };
     setListings((current) => [newListing, ...current]);
     setActiveIndex(0);
@@ -249,6 +253,7 @@ export default function App() {
 
   const profileName = telegramUser?.first_name ?? "HomeBridge user";
   const profileUsername = telegramUser?.username ? `@${telegramUser.username}` : "Your Telegram profile";
+  const myListings = telegramUser ? listings.filter((item) => item.ownerId === String(telegramUser.id)) : [];
 
   if (mode === "profile") {
     return <main className="profile-screen">
@@ -257,11 +262,11 @@ export default function App() {
         <div className="profile-avatar">{profileName.slice(0, 1).toUpperCase()}</div>
         <h1>{profileName}</h1>
         <p>{profileUsername}</p>
-        <div className="profile-stats"><span><strong>0</strong><small>Listings</small></span><span><strong>0</strong><small>Saved</small></span><span><strong>0</strong><small>Contacts</small></span></div>
+        <div className="profile-stats"><span><strong>{myListings.length}</strong><small>Listings</small></span><span><strong>0</strong><small>Saved</small></span><span><strong>0</strong><small>Contacts</small></span></div>
         <button className="profile-edit" onClick={() => setMode("broker")}>Post a home</button>
       </section>
       <div className="profile-tabs"><button className="profile-tab active">Your listings</button><button className="profile-tab">Saved homes</button></div>
-      <div className="profile-empty"><Icon name="home" /><h2>Your homes will appear here</h2><p>Post a home to connect with renters.</p></div>
+      {myListings.length ? <div className="profile-grid">{myListings.map((item) => <article className="profile-listing" key={item.id}><div className="profile-listing-image" style={{ backgroundImage: `url(${item.images[0]})` }} /><div><h2>{item.title}</h2><p>{item.area}</p><strong>{formatCurrency(item.price)} / month</strong></div></article>)}</div> : <div className="profile-empty"><Icon name="home" /><h2>Your homes will appear here</h2><p>Post a home to connect with renters.</p></div>}
     </main>;
   }
 
