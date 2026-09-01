@@ -115,7 +115,7 @@ export default function App() {
   const telegramUser = telegram?.initDataUnsafe.user;
   const [listings, setListings] = useState(initialListings);
   const [activeIndex, setActiveIndex] = useState(0);
-  const [mode, setMode] = useState<"home" | "broker">("home");
+  const [mode, setMode] = useState<"home" | "broker" | "profile">("home");
   const [slideIndexes, setSlideIndexes] = useState<Record<number, number>>({});
   const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -247,6 +247,24 @@ export default function App() {
     setForm({ title: "", area: "", city: "", kebele: "", price: "", beds: "2", baths: "1", broker: "", description: "" });
   };
 
+  const profileName = telegramUser?.first_name ?? "HomeBridge user";
+  const profileUsername = telegramUser?.username ? `@${telegramUser.username}` : "Your Telegram profile";
+
+  if (mode === "profile") {
+    return <main className="profile-screen">
+      <button className="back-button" onClick={() => setMode("home")}>Back to homes</button>
+      <section className="profile-card">
+        <div className="profile-avatar">{profileName.slice(0, 1).toUpperCase()}</div>
+        <h1>{profileName}</h1>
+        <p>{profileUsername}</p>
+        <div className="profile-stats"><span><strong>0</strong><small>Listings</small></span><span><strong>0</strong><small>Saved</small></span><span><strong>0</strong><small>Contacts</small></span></div>
+        <button className="profile-edit" onClick={() => setMode("broker")}>Post a home</button>
+      </section>
+      <div className="profile-tabs"><button className="profile-tab active">Your listings</button><button className="profile-tab">Saved homes</button></div>
+      <div className="profile-empty"><Icon name="home" /><h2>Your homes will appear here</h2><p>Post a home to connect with renters.</p></div>
+    </main>;
+  }
+
   if (mode === "broker") {
     return <main className="broker-screen">
       <button className="back-button" onClick={() => setMode("home")}>Back to homes</button>
@@ -314,6 +332,6 @@ export default function App() {
         <div className="story-progress">{item.images.map((image, imageIndex) => <button key={image} className={imageIndex === (slideIndexes[item.id] ?? 0) ? "current" : ""} aria-label={`Image ${imageIndex + 1} of ${item.images.length}`} />)}</div>
       </section>)}
     </div> : <div className="empty-state"><h1>No homes found</h1><p>Try another area or broker name.</p></div>}
-    <nav className="bottom-nav"><button className="nav-item active"><Icon name="home" /><span className="amharic">ተከራይ</span><b>9</b></button><button className="add-home" onClick={() => setMode("broker")}><Icon name="plus" /><span className="amharic">አከራይ</span></button><button className="nav-item" onClick={() => notify(telegramUser ? `${telegramUser.first_name}'s profile is coming soon.` : "Profile is coming soon.")}><Icon name="user" /><span className="amharic">መገለጫ</span></button></nav>
+    <nav className="bottom-nav"><button className="nav-item active"><Icon name="home" /><span className="amharic">ተከራይ</span><b>9</b></button><button className="add-home" onClick={() => setMode("broker")}><Icon name="plus" /><span className="amharic">አከራይ</span></button><button className="nav-item" onClick={() => setMode("profile")}><Icon name="user" /><span className="amharic">መገለጫ</span></button></nav>
   </main>;
 }
