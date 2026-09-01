@@ -180,11 +180,8 @@ export default function App() {
         await navigator.share(shareData);
         return;
       }
-      if (telegram?.openTelegramLink) {
-        const telegramShareUrl = new URL("https://t.me/share/url");
-        telegramShareUrl.searchParams.set("url", shareData.url);
-        telegramShareUrl.searchParams.set("text", shareData.text);
-        telegram.openTelegramLink(telegramShareUrl.toString());
+      if (telegram?.openLink) {
+        telegram.openLink(shareData.url);
         return;
       }
       await navigator.clipboard.writeText(`${shareData.text}\n${shareData.url}`);
