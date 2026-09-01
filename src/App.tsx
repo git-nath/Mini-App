@@ -8,6 +8,7 @@ type Listing = {
   city: string;
   kebele: string;
   price: number;
+  priceRange?: string;
   beds: number;
   baths: number;
   type: string;
@@ -18,6 +19,16 @@ type Listing = {
   ownerId?: string;
   avatarUrl?: string;
 };
+
+type PriceRange = "all" | "under-5000" | "5000-10000" | "10000-20000" | "over-20000";
+
+const priceRanges: { value: PriceRange; label: string; minimum: number; maximum?: number }[] = [
+  { value: "all", label: "Any price", minimum: 0 },
+  { value: "under-5000", label: "Up to 5,000 ETB", minimum: 0, maximum: 5000 },
+  { value: "5000-10000", label: "5,000 - 10,000 ETB", minimum: 5000, maximum: 10000 },
+  { value: "10000-20000", label: "10,000 - 20,000 ETB", minimum: 10000, maximum: 20000 },
+  { value: "over-20000", label: "Over 20,000 ETB", minimum: 20000 },
+];
 
 const initialListings: Listing[] = [
   {
@@ -88,6 +99,7 @@ function mapListing(row: Record<string, unknown>): Listing {
     city: String(row.city ?? ""),
     kebele: String(row.kebele ?? ""),
     price: Number(row.price),
+    priceRange: row.price_range ? String(row.price_range) : undefined,
     beds: Number(row.beds),
     baths: Number(row.baths),
     type: String(row.type),
@@ -124,10 +136,13 @@ export default function App() {
   const [slideIndexes, setSlideIndexes] = useState<Record<number, number>>({});
   const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [filterOpen, setFilterOpen] = useState(true);
+  const [filters, setFilters] = useState({ type: "all", priceRange: "all" as PriceRange, address: "" });
+  const [filterDraft, setFilterDraft] = useState(filters);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [saving, setSaving] = useState(false);
   const [loadError, setLoadError] = useState("");
-  const [form, setForm] = useState({ title: "", area: "", city: "", kebele: "", price: "", beds: "2", baths: "1", description: "" });
+  const [form, setForm] = useState({ title: "", area: "", city: "", kebele: "", price: "", priceRange: "", beds: "2", baths: "1", description: "" });
   const feedRef = useRef<HTMLDivElement>(null);
   const touchStart = useRef<{ x: number; y: number; listingId: number } | null>(null);
 
@@ -155,7 +170,12 @@ export default function App() {
 
   const visibleListings = listings.filter((listing) => {
     const query = search.toLowerCase();
-    return !query || `${listing.title} ${listing.area} ${listing.broker}`.toLowerCase().includes(query);
+    const address = filters.address.toLowerCase();
+    const selectedRange = priceRanges.find((range) => range.value === filters.priceRange) ?? priceRanges[0];
+    const matchesType = filters.type === "all" || listing.type === filters.type || listing.title === filters.type || (filters.type === "ቤት" && ["Apartment", "House", "Studio"].includes(listing.type));
+    const matchesPrice = filters.priceRange === "all" || (listing.price >= selectedRange.minimum && (selectedRange.maximum === undefined || listing.price <= selectedRange.maximum));
+    const matchesAddress = !address || `${listing.area} ${listing.city} ${listing.kebele}`.toLowerCase().includes(address);
+    return matchesType && matchesPrice && matchesAddress && (!query || `${listing.title} ${listing.area} ${listing.city} ${listing.kebele} ${listing.broker}`.toLowerCase().includes(query));
   });
   const listing = visibleListings[activeIndex] ?? visibleListings[0];
 
@@ -229,7 +249,7 @@ export default function App() {
       }
       const { data, error } = await client.from("listings").insert({
         title: form.title, area: form.area, city: form.city, kebele: form.kebele, price: Number(form.price), beds: Number(form.beds), baths: Number(form.baths),
-        type: form.title, broker: telegramBrokerName, description: form.description, image_url: uploadedImages[0], image_urls: uploadedImages, verified: false,
+        type: form.title, broker: telegramBrokerName, description: form.description, image_url: uploadedImages[0], image_urls: uploadedImages, verified: false, price_range: form.priceRange,
         telegram_user_id: telegramUser ? String(telegramUser.id) : null, broker_avatar_url: telegramAvatarUrl ?? null,
       }).select().single();
       setSaving(false);
@@ -241,12 +261,12 @@ export default function App() {
       setActiveIndex(0);
       setMode("home");
       setImageFiles([]);
-      setForm({ title: "", area: "", city: "", kebele: "", price: "", beds: "2", baths: "1", description: "" });
+      setForm({ title: "", area: "", city: "", kebele: "", price: "", priceRange: "", beds: "2", baths: "1", description: "" });
       return;
     }
 
     const newListing: Listing = {
-      id: Date.now(), title: form.title, area: form.area, city: form.city, kebele: form.kebele, price: Number(form.price), beds: Number(form.beds), baths: Number(form.baths),
+      id: Date.now(), title: form.title, area: form.area, city: form.city, kebele: form.kebele, price: Number(form.price), priceRange: form.priceRange, beds: Number(form.beds), baths: Number(form.baths),
       type: form.title, broker: telegramBrokerName, verified: false, description: form.description,
       images: ["https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=85"],
       ownerId: telegramUser ? String(telegramUser.id) : undefined,
@@ -257,7 +277,7 @@ export default function App() {
     setMode("home");
     setImageFiles([]);
     setSaving(false);
-    setForm({ title: "", area: "", city: "", kebele: "", price: "", beds: "2", baths: "1", description: "" });
+    setForm({ title: "", area: "", city: "", kebele: "", price: "", priceRange: "", beds: "2", baths: "1", description: "" });
   };
 
   const profileName = profileTarget?.name ?? telegramUser?.first_name ?? "HomeBridge user";
@@ -282,7 +302,7 @@ export default function App() {
         {isOwnProfile && <button className="profile-edit" onClick={() => setMode("broker")}>Post a home</button>}
       </section>
       <div className="profile-tabs"><button className="profile-tab active">Your listings</button><button className="profile-tab">Saved homes</button></div>
-      {profileListings.length ? <div className="profile-grid">{profileListings.map((item) => <article className="profile-listing" key={item.id}><div className="profile-listing-image" style={{ backgroundImage: `url(${item.images[0]})` }} /><div><h2>{item.title}</h2><p>{item.area}</p><strong>{formatCurrency(item.price)} / month</strong></div></article>)}</div> : <div className="profile-empty"><Icon name="home" /><h2>No homes posted yet</h2><p>Homes posted by this person will appear here.</p></div>}
+      {profileListings.length ? <div className="profile-grid">{profileListings.map((item) => <article className="profile-listing" key={item.id}><div className="profile-listing-image" style={{ backgroundImage: `url(${item.images[0]})` }} /><div><h2>{item.title}</h2><p>{item.area}</p><strong>{item.priceRange ?? formatCurrency(item.price)} / month</strong></div></article>)}</div> : <div className="profile-empty"><Icon name="home" /><h2>No homes posted yet</h2><p>Homes posted by this person will appear here.</p></div>}
     </main>;
   }
 
@@ -295,7 +315,7 @@ export default function App() {
         <input required placeholder="አድራሻ" value={form.area} onChange={(e) => setForm({ ...form, area: e.target.value })} />
         <input required placeholder="ከተማ" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
         <input required placeholder="ቀበሌ" value={form.kebele} onChange={(e) => setForm({ ...form, kebele: e.target.value })} />
-        <div className="form-row"><input required type="number" min="0" placeholder="Monthly price" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} /><select value={form.beds} onChange={(e) => setForm({ ...form, beds: e.target.value })}><option value="1">1 bedroom</option><option value="2">2 bedrooms</option><option value="3">3 bedrooms</option><option value="4">4 bedrooms</option></select></div>
+        <div className="form-row"><select required value={form.priceRange} onChange={(e) => { const value = e.target.value as PriceRange; const selected = priceRanges.find((range) => range.value === value); setForm({ ...form, priceRange: value, price: String(selected?.minimum ?? 0) }); }}><option value="" disabled>Select price range</option>{priceRanges.filter((range) => range.value !== "all").map((range) => <option key={range.value} value={range.value}>{range.label}</option>)}</select><select value={form.beds} onChange={(e) => setForm({ ...form, beds: e.target.value })}><option value="1">1 bedroom</option><option value="2">2 bedrooms</option><option value="3">3 bedrooms</option><option value="4">4 bedrooms</option></select></div>
         <label className="image-picker"><span>{imageFiles.length ? `${imageFiles.length} image${imageFiles.length === 1 ? "" : "s"} selected (max 10)` : "Choose 1 to 10 home photos"}</span><input required={isSupabaseConfigured} type="file" accept="image/png,image/jpeg,image/webp" multiple onChange={(e) => setImageFiles(Array.from(e.target.files ?? []).slice(0, 10))} /></label>
         <textarea required rows={5} placeholder="Short description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
         <button className="publish-button" type="submit" disabled={saving}>{saving ? "Publishing..." : "Publish listing"}</button>
@@ -306,11 +326,12 @@ export default function App() {
 
   return <main className="home-screen">
     <header className="story-header feed-header">
-      <button className="live-button">HOMES</button>
+      <button className="live-button" onClick={() => { setFilterDraft(filters); setFilterOpen(true); }}>HOMES</button>
       <div className="story-tabs"><button className="muted-tab amharic">ሱቅ</button><button className="selected-tab amharic">ቤት</button></div>
       <button className="icon-button" onClick={() => setSearchOpen((open) => !open)} aria-label="Search homes"><Icon name="search" /></button>
     </header>
     {searchOpen && <div className="search-box"><div className="search-input-row"><Icon name="search" /><input autoFocus placeholder="Search homes" value={search} onChange={(e) => setSearch(e.target.value)} /></div></div>}
+    {filterOpen && <div className="filter-backdrop" role="presentation"><section className="filter-sheet" role="dialog" aria-modal="true" aria-labelledby="filter-title"><div className="filter-heading"><div><span className="filter-kicker">FILTER HOMES</span><h2 id="filter-title">Find your place</h2></div><button className="filter-close" onClick={() => setFilterOpen(false)} aria-label="Close filters">×</button></div><label className="filter-label">Type<select value={filterDraft.type} onChange={(e) => setFilterDraft({ ...filterDraft, type: e.target.value })}><option value="all">All homes</option><option value="ቤት">ቤት</option><option value="ሱቅ">ሱቅ</option></select></label><label className="filter-label">Price range<select value={filterDraft.priceRange} onChange={(e) => setFilterDraft({ ...filterDraft, priceRange: e.target.value as PriceRange })}>{priceRanges.map((range) => <option key={range.value} value={range.value}>{range.label}</option>)}</select></label><label className="filter-label">Address<input placeholder="ከተማ or ቀበሌ" value={filterDraft.address} onChange={(e) => setFilterDraft({ ...filterDraft, address: e.target.value })} /></label><div className="filter-actions"><button className="filter-reset" onClick={() => setFilterDraft({ type: "all", priceRange: "all", address: "" })}>Clear</button><button className="filter-apply" onClick={() => { setFilters(filterDraft); setFilterOpen(false); setActiveIndex(0); }}>Show homes</button></div></section></div>}
     {listing ? <div className="property-feed" ref={feedRef} onScroll={(event) => setActiveIndex(Math.round(event.currentTarget.scrollTop / event.currentTarget.clientHeight))}>
       {visibleListings.map((item, index) => <section className="property-story" key={item.id}>
         <div

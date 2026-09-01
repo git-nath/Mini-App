@@ -6,6 +6,7 @@ create table if not exists public.listings (
   telegram_user_id text,
   city text not null default 'Addis Ababa',
   price integer not null check (price >= 0),
+  price_range text,
   beds integer not null default 1 check (beds >= 0),
   baths integer not null default 1 check (baths >= 0),
   type text not null default 'Apartment',
@@ -21,6 +22,7 @@ alter table public.listings add column if not exists image_urls jsonb not null d
 alter table public.listings add column if not exists kebele text not null default '';
 alter table public.listings add column if not exists telegram_user_id text;
 alter table public.listings add column if not exists broker_avatar_url text;
+alter table public.listings add column if not exists price_range text;
 
 alter table public.listings enable row level security;
 
