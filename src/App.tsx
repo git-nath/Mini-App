@@ -136,6 +136,7 @@ export default function App() {
   const [slideIndexes, setSlideIndexes] = useState<Record<number, number>>({});
   const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [roleChoiceOpen, setRoleChoiceOpen] = useState(true);
   const [filterOpen, setFilterOpen] = useState(true);
   const [filters, setFilters] = useState({ type: "all", priceRange: "all" as PriceRange, address: "" });
   const [filterDraft, setFilterDraft] = useState(filters);
@@ -325,6 +326,7 @@ export default function App() {
   }
 
   return <main className="home-screen">
+    {roleChoiceOpen && <div className="role-backdrop"><section className="role-sheet" role="dialog" aria-modal="true" aria-labelledby="role-title"><span className="filter-kicker">HOME BRIDGE</span><h1 id="role-title">How will you use the app?</h1><p>Choose your path to get started.</p><div className="role-options"><button className="role-option" onClick={() => setRoleChoiceOpen(false)}><strong className="amharic">ተከራይ</strong><span>Find a home</span></button><button className="role-option landlord" onClick={() => { setRoleChoiceOpen(false); setFilterOpen(false); setMode("broker"); }}><strong className="amharic">አከራይ</strong><span>Post a home</span></button></div></section></div>}
     <header className="story-header feed-header">
       <button className="live-button" onClick={() => { setFilterDraft(filters); setFilterOpen(true); }}>HOMES</button>
       <div className="story-tabs"><button className="muted-tab amharic">ሱቅ</button><button className="selected-tab amharic">ቤት</button></div>

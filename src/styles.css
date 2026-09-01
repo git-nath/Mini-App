@@ -42,6 +42,17 @@ svg { width: 28px; height: 28px; fill: none; stroke: currentColor; stroke-width:
 .search-box input { width: 100%; min-height: 36px; border: 0; outline: 0; color: #fff; background: transparent; font: 0.9rem ui-sans-serif, system-ui, sans-serif; }
 .filter-backdrop { position: fixed; inset: 0; z-index: 20; display: flex; align-items: flex-start; justify-content: center; padding: 72px 14px 24px; background: rgba(0,0,0,.56); backdrop-filter: blur(4px); }
 .filter-sheet { width: min(100%, 520px); padding: 20px; border: 1px solid rgba(255,255,255,.12); border-radius: 24px; background: linear-gradient(145deg, #292020, #111); box-shadow: 0 20px 70px rgba(0,0,0,.55); }
+.role-backdrop { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; padding: 22px; background: rgba(0,0,0,.7); backdrop-filter: blur(8px); }
+.role-sheet { width: min(100%, 430px); padding: 26px 20px 20px; border: 1px solid rgba(255,255,255,.14); border-radius: 26px; background: linear-gradient(145deg, #302020, #111); box-shadow: 0 24px 80px rgba(0,0,0,.65); text-align: center; }
+.role-sheet h1 { margin: 8px 0 7px; font-size: clamp(1.65rem, 8vw, 2.2rem); line-height: 1.05; }
+.role-sheet > p { margin: 0; color: var(--muted); font: .86rem ui-sans-serif, system-ui, sans-serif; }
+.role-options { display: grid; gap: 11px; margin-top: 24px; }
+.role-option { display: grid; gap: 4px; min-height: 82px; padding: 15px 18px; border: 1px solid rgba(255,255,255,.15); border-radius: 17px; background: rgba(255,255,255,.09); text-align: left; transition: transform 160ms ease, background 160ms ease; }
+.role-option:hover, .role-option:focus-visible { transform: translateY(-2px); background: rgba(255,46,100,.2); outline: none; }
+.role-option strong { font-size: 1.35rem; }
+.role-option span { color: var(--muted); font: .78rem ui-sans-serif, system-ui, sans-serif; }
+.role-option.landlord { background: var(--pink); border-color: transparent; }
+.role-option.landlord span { color: rgba(255,255,255,.86); }
 .filter-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; margin-bottom: 22px; }
 .filter-kicker { color: #ff91aa; font: 700 .66rem ui-sans-serif, system-ui, sans-serif; letter-spacing: .14em; }
 .filter-heading h2 { margin: 5px 0 0; font-size: 1.8rem; }
